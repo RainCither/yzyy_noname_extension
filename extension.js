@@ -692,6 +692,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         },
                         group: ["yzyy_xuwu_js", "yzyy_xuwu_wl", "yzyy_xuwu_tf", "yzyy_xuwu_die", "yzyy_xuwu_ts",],
                         subSkill: {
+                            dp:{
+                                audio: 2,
+                                forced: true,
+                                trigger: {
+                                    player: "damageAfter",
+                                },
+                                filter: function (event, player, name) {
+                                    return player.countCards("h") > player.hp;
+                                },
+                                content: function () {
+                                    player.insertPhase();
+                                },
+                            },
                             ts:{
                                 trigger: {
                                     global: "dieAfter",
@@ -706,42 +719,32 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             },
                             die: {
                                 trigger: {
-                                    player: ["dieBegin", "changeHp"],
+                                    player: ["dieBegin",],
                                 },
                                 priority: Infinity,
                                 forced: true,
                                 forceDie: true,
                                 init: function (player) {
-                                    player.xuhp = player.maxHp;
                                     var yongsheng = window.setInterval(function () {
                                         if (player.isDead()) {
                                             if (player.maxHp < 4) player.maxHp = 3;
-                                            player.revive(Math.max(1, game.me.maxHp));
+                                            player.revive(Math.max(1, player.maxHp));
                                             player.draw(game.players.length);
-                                        }
-                                        if (false) {
-                                            game.addGlobalSkill('yzyy_tianfa');
-                                            window.clearInterval(yongsheng);
                                         }
                                     }, 1000);
                                 },
                                 content: function () {
-                                    if (event.triggername == "changeHp") {
-                                        player.xuhp += trigger.num;
-                                        player.hp = player.xuhp;
-                                    }
-                                    else if (player.xuhp > 0 || player.hp > 0 || player.maxHp < 1) {
-                                        if (trigger.source) trigger.source.die();
+                                    if (player.hp > 0) {
                                         trigger.untrigger;
                                         trigger.finish();
-                                        player.hp = player.xuhp;
+                                    }else if(trigger.source.countCards("he") > 0 || player.maxHp < 1){
+                                        trigger.untrigger;
+                                        trigger.finish();
                                         if (player.maxHp < 4) player.maxHp = 3;
+                                        player.hp = 1;
                                         player.update();
-                                    }else if(game.hasPlayer(function (current) { return current.hasMark('yzyy_shenlin_mark') })){
-                                        trigger.untrigger;
-                                        trigger.finish();
-                                        player.recover();
                                     }
+                                    
                                 },
                                 sub:true,
                             },
@@ -758,10 +761,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 },
                                 content: function () {
                                     if (trigger.cards && get.position(trigger.cards[0]) == 'd' && get.itemtype(trigger.cards[0]) == 'card') {
-                                        player.gain(trigger.cards[0], 'gain2');
+                                        player.gain(trigger.cards, 'gain2');
                                     }
-                                    trigger.untrigger();
-                                    trigger.finish();
+                                    if(get.type(trigger.cards[0]) == "trick"){
+                                        trigger.untrigger();
+                                        trigger.finish();
+                                    }
                                 },
                                 sub: true,
                             },
@@ -1232,7 +1237,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     "yzyy_huanshen6": "幻神·无懈",
                     "yzyy_huanshen7": "幻神·灭",
                     "yzyy_xuwu": "虚无",
-                    "yzyy_xuwu_info": "锁定技。当你成为一张牌的目标时，有90%的概率令此牌失效然后获得此牌。当你受到伤害时，有90%的概率防止此伤害。你的体力上限无法降低。准备阶段，你置空判定区，并摸x张牌下（x为弃置数）。你的手牌没有上限，出牌无视距离，非延时锦囊牌不能被无懈可击响应。 铁索，翻面，混乱，体力流失，封印对你无效。免疫一般即死。死亡后复活。每有一名角色死亡，你增加一点体力上限，并回复一点体力。",
+                    "yzyy_xuwu_info": "锁定技。当你成为一张牌的目标时，有90%的概率获得此牌,非延时锦囊对你无效。当你受到伤害时，有90%的概率防止此伤害。准备阶段，你置空判定区，并摸x张牌下（x为弃置数）。受到伤害后，若手牌大于体力，在伤害来源回合结束后自己开始一个新的回合。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫一般即死。死亡后复活。每有一名角色死亡，你增加一点体力上限，并回复一点体力。",
                     "yzyy_yigong":"弈攻",
                     "yzyy_yigong_info":"受到伤害后，伤害来源获得一枚【弃】标记。拥有【弃】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
                     "yzyy_qianyi":"谦弈",
