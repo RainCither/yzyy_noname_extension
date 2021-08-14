@@ -14,10 +14,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 character: {
                     "yzyy_taiyi":["male", "shen", 3, ["yzyy_huanshen",], ["forbidai", "des:天生地养，抱守如一。"]],
                     "yzyy_xuling": ["female", "shen", 3, ["yzyy_tianxin", "yzyy_guixu","yzyy_qianyi","yzyy_souxun", "yzyy_shenlin","yzyy_xuwu", ], ["forbidai", "des:游凡巡幽，居天塌道。天心如一，命运造化。"]],
+                    "yzyy_zhiqi":["male", "shen", 3, ["yzyy_qianyi","yzyy_siyi"], ["forbidai", "des:世事如棋，万物在心"]],
                 },
                 translate: {
                     "yzyy_taiyi":"太一",
                     "yzyy_xuling": "虚琳",
+                    "yzyy_zhiqi":"执棋",
                     
                 },
             },
@@ -870,8 +872,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             },
                         },
                     },
-                    yzyy_qianshou: {
-                        group:["yzyy_qianshou_mark","yzyy_qianshou_buff"],
+                    yzyy_siyi: {
+                        group:["yzyy_siyi_mark","yzyy_siyi_buff"],
                         subSkill:{
                             mark:{
                                 trigger: {
@@ -881,7 +883,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     return event.source;
                                 },
                                 content: function () {
-                                    trigger.source.addMark("yzyy_qianshou_mark",trigger.num);
+                                    trigger.source.addMark("yzyy_siyi_mark",trigger.num);
                                 },
                                 marktext: '弃',
                                 intro: {
@@ -898,11 +900,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 priority: -9,
                                 forced: true,
                                 filter: function (event, player) {
-                                    return event.player.hasMark("yzyy_qianshou_mark");
+                                    return event.player.hasMark("yzyy_siyi_mark");
                                 },
                                 content: function () {
                                     "step 0"
-                                    trigger.player.removeMark("yzyy_qianshou_mark", 1);
+                                    trigger.player.removeMark("yzyy_siyi_mark", 1);
                                     trigger.player.judge();
                                     "step 1"
                                     var target = trigger.player;
@@ -913,7 +915,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         case 'club':target.turnOver(); target.randomDiscard(); break;
                                     }
                                     "step 2"
-                                    if(trigger.player.hasMark("yzyy_qianshou_mark")) event.goto(0);
+                                    if(trigger.player.hasMark("yzyy_siyi_mark")) event.goto(0);
                                 },
                                 sub:true,
                             },
@@ -1238,10 +1240,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     "yzyy_huanshen7": "幻神·灭",
                     "yzyy_xuwu": "虚无",
                     "yzyy_xuwu_info": "锁定技。当你成为一张牌的目标时，有90%的概率获得此牌,非延时锦囊对你无效。当你受到伤害时，有90%的概率防止此伤害。准备阶段，你置空判定区，并摸x张牌下（x为弃置数）。受到伤害后，若手牌大于体力，在伤害来源回合结束后自己开始一个新的回合。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫一般即死。死亡后复活。每有一名角色死亡，你增加一点体力上限，并回复一点体力。",
-                    "yzyy_yigong":"弈攻",
-                    "yzyy_yigong_info":"受到伤害后，伤害来源获得一枚【弃】标记。拥有【弃】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
-                    "yzyy_qianyi":"谦弈",
-                    "yzyy_qianyi_info":"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害，并摸x张牌。若为黑色，你摸x张牌。(x为此次受到的伤害值)",
                     "yzyy_tianxin": "天行",
                     "yzyy_tianxin_info": "出牌阶段限一次，你可展示牌堆顶的一张牌并使用之。若如此做，你重复此流程，直到你以此法展示的牌无法使用为止。每以此法使用一张牌，你使用杀的上限+1。",
                     "yzyy_guixu": "同掷",
@@ -1252,6 +1250,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     "yzyy_shenlin_info":'出牌阶段限一次，你可以展示一张手牌，并交给一名角色，然后令其获得一个【临】标记。有【临】标记的角色，回合将由你控制。其濒死时，移除【临】标记（标记最多不超过你的体力上限）<span class="bluetext" style="color:#FF6500">你可以关闭【自动发动】使技能不发动</span>',
                     "yzyy_shenlin2":"降神",
                     "yzyy_shenlin2_info":"神降",
+                    "yzyy_qianyi":"谦弈",
+                    "yzyy_qianyi_info":"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害，并摸x张牌。若为黑色，你摸x张牌。(x为此次受到的伤害值)",
+                    "yzyy_siyi":"死弈",
+                    "yzyy_siyi_info":"当你受到伤害后，伤害来源获得x枚【弃】标记。（x为伤害值）拥有【弃】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
 
                 },
             },
@@ -1260,6 +1262,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             diskURL: "",
             forumURL: "",
             version: "1.0",
-        }, files: { "character": ["yzyy_xuling.jpg","yzyy_taiyi.jpg"], "card": [], "skill": [] }
+        }, files: { "character": ["yzyy_xuling.jpg","yzyy_taiyi.jpg","yzyy_zhiqi.jpg"], "card": [], "skill": [] }
     }
 })
