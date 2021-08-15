@@ -846,11 +846,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     'step 0'
                                     var card = get.cards();
                                     event.color = get.color(card);
+                                    event.suit = get.suit(card);
                                     trigger.player.showCards(card);
                                     game.cardsDiscard(card);
                                     'step 1'
+                                    switch (event.suit) {
+                                        case 'heart': player.recover(); break;
+                                        case 'spade': player.recover();break;
+                                    }
                                     if( event.color == "black") {
-                                    player.draw(trigger.num);
+                                    player.draw(2 * trigger.num);
                                     event.finish();
                                     }
                                     'step 2'
@@ -864,7 +869,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     if (result.bool && result.targets && result.targets.length) {
                                         player.line(result.targets[0], 'green');
                                         result.targets[0].damage(trigger.source || 'nosource', trigger.num, trigger.nature);
-                                        result.targets[0].draw(trigger.num);
+                                        player.draw(trigger.num);
                                     }
 
                                 },
@@ -877,13 +882,27 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         subSkill:{
                             mark:{
                                 trigger: {
-                                    player: "damageEnd",
-                                },
-                                filter: function (event, player) {
-                                    return event.source;
+                                    player: ["damageEnd","loseHpEnd"],
                                 },
                                 content: function () {
-                                    trigger.source.addMark("yzyy_siyi_mark",trigger.num);
+                                    'step 0'
+                                    if(trigger.source){
+                                        trigger.source.addMark("yzyy_siyi_mark",trigger.num);
+                                        event.finish();
+                                    }else{
+                                        player.chooseTarget('是否选择一名角色获得一枚【弃】标记？', function (card, player, target) {
+                                            return player != target;
+                                        }).set('ai', function (target) {
+                                            return -ai.get.attitude(player, target);
+                                        });
+                                    }
+                                    'step 1'
+                                    if (result.bool && result.targets && result.targets.length) {
+                                        player.line(result.targets[0], 'green');
+                                        result.targets[0].addMark("yzyy_siyi_mark",trigger.num);
+                                    }
+                                    
+                                    
                                 },
                                 marktext: '弃',
                                 intro: {
@@ -910,8 +929,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     var target = trigger.player;
                                     switch (result.suit) {
                                         case 'heart': target.loseHp(); target.draw(); break;
-                                        case 'diamond': target.link(); target.damage("nosource", 1, "fire"); break;
-                                        case 'spade': target.addTempSkill("yzyy_yigong_buff1"); target.addMark("yzyy_yigong_buff1",1,false);  player.draw();break;
+                                        case 'diamond': if(!target.isLinked)target.link(); target.damage("nosource", 1, "fire"); break;
+                                        case 'spade': target.addTempSkill("yzyy_siyi_buff1"); target.addMark("yzyy_siyi_buff1",1,false);  player.draw();break;
                                         case 'club':target.turnOver(); target.randomDiscard(); break;
                                     }
                                     "step 2"
@@ -924,7 +943,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 mark:true,
                                 mod:{
                                     maxHandcard:function(player,num){
-                                        return num-player.countMark('rewangzun2');
+                                        return num-player.countMark('yzyy_siyi_buff1');
                                     },
                                 },
                                 intro:{content:'手牌上限-#'},
@@ -1251,9 +1270,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     "yzyy_shenlin2":"降神",
                     "yzyy_shenlin2_info":"神降",
                     "yzyy_qianyi":"谦弈",
-                    "yzyy_qianyi_info":"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害，并摸x张牌。若为黑色，你摸x张牌。(x为此次受到的伤害值)",
+                    "yzyy_qianyi_info":"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，然后可以选择一名角色替你承受此次伤害,你摸x张牌。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。若为红黑桃，你回复一点体力。",
                     "yzyy_siyi":"死弈",
-                    "yzyy_siyi_info":"当你受到伤害后，伤害来源获得x枚【弃】标记。（x为伤害值）拥有【弃】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
+                    "yzyy_siyi_info":"当你受到伤害或流失体力后，来源获得x枚【弃】标记，若无来源，你选择一名角色获得x枚【弃】标记。（x为伤害值）拥有【弃】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
 
                 },
             },
