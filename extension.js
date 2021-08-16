@@ -844,17 +844,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 forced: true,
                                 content: function () {
                                     'step 0'
-                                    var card = get.cards();
-                                    event.color = get.color(card);
-                                    event.suit = get.suit(card);
-                                    trigger.player.showCards(card);
-                                    game.cardsDiscard(card);
+                                    event.card = get.cards();
+                                    trigger.player.showCards(event.card);
+                                    game.cardsDiscard(event.card);
                                     'step 1'
-                                    switch (event.suit) {
-                                        case 'heart': player.recover(); break;
-                                        case 'spade': player.recover();break;
-                                    }
-                                    if( event.color == "black") {
+                                    if( get.color(event.card) == "black") {
                                     player.draw(2 * trigger.num);
                                     event.finish();
                                     }
@@ -869,9 +863,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     if (result.bool && result.targets && result.targets.length) {
                                         player.line(result.targets[0], 'green');
                                         result.targets[0].damage(trigger.source || 'nosource', trigger.num, trigger.nature);
-                                        player.draw(trigger.num);
                                     }
-
                                 },
                                 sub: true,
                             },
@@ -882,39 +874,31 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         subSkill:{
                             mark:{
                                 trigger: {
-                                    player: ["damageEnd","loseHpEnd"],
+                                    player: ["phaseZhunbeiBegin","phaseJieshuBegin","damageEnd","loseHpEnd"],
                                 },
                                 content: function () {
                                     'step 0'
-                                    if(trigger.source){
-                                        trigger.source.addMark("yzyy_siyi_mark",trigger.num);
-                                        event.finish();
-                                    }else{
-                                        player.chooseTarget('是否选择一名角色获得一枚【弃】标记？', function (card, player, target) {
-                                            return player != target;
-                                        }).set('ai', function (target) {
-                                            return -ai.get.attitude(player, target);
-                                        });
-                                    }
+                                    player.chooseTarget('是否选择一名角色获得一枚【劫】标记？', function (card, player, target) {
+                                        return player != target;
+                                    }).set('ai', function (target) {
+                                        return -ai.get.attitude(player, target);
+                                    });
                                     'step 1'
                                     if (result.bool && result.targets && result.targets.length) {
                                         player.line(result.targets[0], 'green');
                                         result.targets[0].addMark("yzyy_siyi_mark",trigger.num);
                                     }
-                                    
-                                    
                                 },
-                                marktext: '弃',
+                                marktext: '劫',
                                 intro: {
-                                    name: '弃',
-                                    name2: '弃子',
+                                    name: '劫',
                                     content: 'mark',
                                 },
                                 sub:true,
                             },
                             buff:{
                                 trigger: {
-                                    global: 'phaseUseBefore',
+                                    global: 'phaseBegin',
                                 },
                                 priority: -9,
                                 forced: true,
@@ -929,7 +913,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     var target = trigger.player;
                                     switch (result.suit) {
                                         case 'heart': target.loseHp(); target.draw(); break;
-                                        case 'diamond': if(!target.isLinked)target.link(); target.damage("nosource", 1, "fire"); break;
+                                        case 'diamond': if(!target.isLinked())target.link(); target.damage("nosource", 1, "fire"); break;
                                         case 'spade': target.addTempSkill("yzyy_siyi_buff1"); target.addMark("yzyy_siyi_buff1",1,false);  player.draw();break;
                                         case 'club':target.turnOver(); target.randomDiscard(); break;
                                     }
@@ -1270,9 +1254,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     "yzyy_shenlin2":"降神",
                     "yzyy_shenlin2_info":"神降",
                     "yzyy_qianyi":"谦弈",
-                    "yzyy_qianyi_info":"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，然后可以选择一名角色替你承受此次伤害,你摸x张牌。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。若为红黑桃，你回复一点体力。",
+                    "yzyy_qianyi_info":"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。",
                     "yzyy_siyi":"死弈",
-                    "yzyy_siyi_info":"当你受到伤害或流失体力后，来源获得x枚【弃】标记，若无来源，你选择一名角色获得x枚【弃】标记。（x为伤害值）拥有【弃】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
+                    "yzyy_siyi_info":"准备阶段、结束阶段或当你受到伤害、流失体力后，你选择一名角色获得1或x枚【劫】标记。（x为伤害值）拥有【劫】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
 
                 },
             },
