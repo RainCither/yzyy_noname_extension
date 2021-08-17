@@ -876,6 +876,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 trigger: {
                                     player: ["phaseZhunbeiBegin","phaseJieshuBegin","damageEnd","loseHpEnd"],
                                 },
+                                forced: true,
                                 content: function () {
                                     'step 0'
                                     player.chooseTarget('是否选择一名角色获得一枚【劫】标记？', function (card, player, target) {
@@ -912,10 +913,27 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     "step 1"
                                     var target = trigger.player;
                                     switch (result.suit) {
-                                        case 'heart': target.loseHp(); target.draw(); break;
-                                        case 'diamond': if(!target.isLinked())target.link(); target.damage("nosource", 1, "fire"); break;
-                                        case 'spade': target.addTempSkill("yzyy_siyi_buff1"); target.addMark("yzyy_siyi_buff1",1,false);  player.draw();break;
-                                        case 'club':target.turnOver(); target.randomDiscard(); break;
+                                        case 'heart': 
+                                            target.skip('phaseJudge');
+                                            game.log(target,'跳过判定阶段');
+                                            target.addTempSkill("yzyy_siyi_buff2"); 
+                                            break;
+                                        case 'diamond': 
+                                            target.skip('phaseDraw'); 
+                                            game.log(target,'跳过摸牌阶段');
+                                            target.randomDiscard();
+                                            break;
+                                        case 'spade': 
+                                            target.skip('phaseUse'); 
+                                            game.log(target,'跳过出牌阶段');
+                                            target.addTempSkill("yzyy_siyi_buff1"); 
+                                            target.addMark("yzyy_siyi_buff1",1,false);
+                                            break;
+                                        case 'club':
+                                            target.skip('phaseDiscard'); 
+                                            game.log(target,'跳过弃牌阶段');
+                                            target.addTempSkill("yzyy_siyi_buff3"); 
+                                            break;
                                     }
                                     "step 2"
                                     if(trigger.player.hasMark("yzyy_siyi_mark")) event.goto(0);
@@ -925,12 +943,44 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             buff1:{
                                 onremove:true,
                                 mark:true,
+                                marktext:"漏",
                                 mod:{
                                     maxHandcard:function(player,num){
                                         return num-player.countMark('yzyy_siyi_buff1');
                                     },
                                 },
-                                intro:{content:'手牌上限-#'},
+                                intro:{
+                                    name:"漏",
+                                    content:'手牌上限-#',
+                                },
+                            },
+                            buff2:{
+                                mark:true,
+                                marktext:"禁",
+                                onremove:true,
+                                mod:{
+                                    cardEnabled:function (card){
+                                        if (get.type(card) == 'trick' || get.type(card) == 'delay')  return false;
+                                    },
+                                },
+                                intro:{
+                                    name:"禁",
+                                    content:'本回合不能使用锦囊牌'
+                                },
+                            },
+                            buff3:{
+                                mark:true,
+                                marktext:"隐",
+                                onremove:true,
+                                mod:{
+                                    cardEnabled:function (card){
+                                        if (get.type(card) == 'basic')  return false;
+                                    },
+                                },
+                                intro:{
+                                    name:"隐",
+                                    content:'本回合不能使用基本牌'
+                                },
                             },
                         },
                     },
@@ -1256,7 +1306,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     "yzyy_qianyi":"谦弈",
                     "yzyy_qianyi_info":"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。",
                     "yzyy_siyi":"死弈",
-                    "yzyy_siyi_info":"准备阶段、结束阶段或当你受到伤害、流失体力后，你选择一名角色获得1或x枚【劫】标记。（x为伤害值）拥有【劫】标记的角色，其出牌阶段开始时判定，♥流失一点体力并摸一张牌、♠减一手牌上限并令你摸一张牌、♦横置并受到一点火焰伤害、♣翻面并随机弃置一张牌",
+                    "yzyy_siyi_info":"准备阶段、结束阶段或当你受到伤害、流失体力后，你选择一名角色获得1或x枚【劫】标记。（x为伤害值）拥有【劫】标记的角色，其准备阶段判定，♥跳过判定阶段本回合不能使用锦囊、♠跳过摸牌阶段随机弃置一张牌、♦跳过出牌阶段手牌上限减一、♣跳过弃牌阶段本回合不能使用基本",
 
                 },
             },
