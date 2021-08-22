@@ -69,7 +69,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                        },				
                         character:{
                             yzyy_taiyi:["male", "yinshi", 3, ["yzyy_huanshen",], []],
-                            yzyy_xuling: ["female", "shen", 3, ["yzyy_tianxin", "yzyy_guixu","yzyy_qianyi","yzyy_souxun", "yzyy_shenlin","yzyy_xuwu", ], []],
+                            yzyy_xuling: ["female", "shen", 3, ["yzyy_tianxin", "yzyy_guixu","yzyy_qianyi","yzyy_souxun", "yzyy_shenlin","yzyy_xuwu", ], ["boss"]],
                             yzyy_zhiqi:["male", "yinshi", 3, ["yzyy_qianyi","yzyy_siyi"], []],
                         },
                         //武将介绍（选填）
@@ -341,7 +341,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             },
                             yzyy_huanshen1: {
                                 trigger: {
-                                    global: ["gameStart", "phaseBefore"],
+                                    global: ["gameStart",],
                                 },
                                 forced: true,
                                 priority: 10,
@@ -926,12 +926,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 subSkill:{
                                     mark:{
                                         trigger: {
-                                            player: ["phaseZhunbeiBegin","phaseJieshuBegin","damageEnd","loseHpEnd"],
+                                            player: ["discardAfter",],
                                         },
                                         forced: true,
+                                        filter:function (event,player){					
+                                            if(!event.cards) return false;
+                                            return event.cards.length > 1;
+                                        },
                                         content: function () {
                                             'step 0'
-                                            player.chooseTarget('是否选择一名角色获得一枚【劫】标记？', function (card, player, target) {
+                                            player.chooseTarget('是否令一名角色获一枚【征】标记？', function (card, player, target) {
                                                 return player != target;
                                             }).set('ai', function (target) {
                                                 return -ai.get.attitude(player, target);
@@ -939,12 +943,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                             'step 1'
                                             if (result.bool && result.targets && result.targets.length) {
                                                 player.line(result.targets[0], 'green');
-                                                result.targets[0].addMark("yzyy_siyi_mark",trigger.num);
+                                                result.targets[0].addMark("yzyy_siyi_mark",1);
                                             }
                                         },
-                                        marktext: '劫',
+                                        marktext: '征',
                                         intro: {
-                                            name: '劫',
+                                            name: '征子',
                                             content: 'mark',
                                         },
                                         sub:true,
@@ -960,79 +964,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         },
                                         content: function () {
                                             "step 0"
+                                            trigger.player.storage.yzyy_siyi = 0;
+                                            "step 1"
                                             trigger.player.removeMark("yzyy_siyi_mark", 1);
                                             trigger.player.judge();
-                                            "step 1"
-                                            var target = trigger.player;
-                                            switch (result.suit) {
-                                                case 'heart': 
-                                                    target.skip('phaseJudge');
-                                                    game.log(target,'跳过判定阶段');
-                                                    target.addTempSkill("yzyy_siyi_buff2"); 
-                                                    break;
-                                                case 'diamond': 
-                                                    target.skip('phaseDraw'); 
-                                                    game.log(target,'跳过摸牌阶段');
-                                                    target.randomDiscard();
-                                                    break;
-                                                case 'spade': 
-                                                    target.skip('phaseUse'); 
-                                                    game.log(target,'跳过出牌阶段');
-                                                    target.addTempSkill("yzyy_siyi_buff1"); 
-                                                    target.addMark("yzyy_siyi_buff1",1,false);
-                                                    break;
-                                                case 'club':
-                                                    target.skip('phaseDiscard'); 
-                                                    game.log(target,'跳过弃牌阶段');
-                                                    target.addTempSkill("yzyy_siyi_buff3"); 
-                                                    break;
-                                            }
+                                            trigger.player.storage.yzyy_siyi++;
                                             "step 2"
-                                            if(trigger.player.hasMark("yzyy_siyi_mark")) event.goto(0);
+                                            if(result.color == "red"){
+                                                trigger.player.randomDiscard(trigger.player.storage.yzyy_siyi);
+                                                trigger.player.loseHp(trigger.player.storage.yzyy_siyi);
+                                                delete trigger.player.storage.yzyy_siyi;
+                                            }else{
+                                                trigger.player.addMark("yzyy_siyi_mark", 1);
+                                            }
+                                            "step 3"
+                                            if(trigger.player.hasMark("yzyy_siyi_mark")) event.goto(1);
                                         },
                                         sub:true,
-                                    },
-                                    buff1:{
-                                        onremove:true,
-                                        mark:true,
-                                        marktext:"漏",
-                                        mod:{
-                                            maxHandcard:function(player,num){
-                                                return num-player.countMark('yzyy_siyi_buff1');
-                                            },
-                                        },
-                                        intro:{
-                                            name:"漏",
-                                            content:'手牌上限-#',
-                                        },
-                                    },
-                                    buff2:{
-                                        mark:true,
-                                        marktext:"禁",
-                                        onremove:true,
-                                        mod:{
-                                            cardEnabled:function (card){
-                                                if (get.type(card) == 'trick' || get.type(card) == 'delay')  return false;
-                                            },
-                                        },
-                                        intro:{
-                                            name:"禁",
-                                            content:'本回合不能使用锦囊牌'
-                                        },
-                                    },
-                                    buff3:{
-                                        mark:true,
-                                        marktext:"隐",
-                                        onremove:true,
-                                        mod:{
-                                            cardEnabled:function (card){
-                                                if (get.type(card) == 'basic')  return false;
-                                            },
-                                        },
-                                        intro:{
-                                            name:"隐",
-                                            content:'本回合不能使用基本牌'
-                                        },
                                     },
                                 },
                             },
@@ -1343,15 +1291,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_xuling: '虚琳',
                             yzyy_zhiqi:"执棋",
 
-                            yzyy_huanshen: "幻神",
-                            yzyy_huanshen_info: "锁定技，游戏开始时，你从武将牌堆中随机获得两张武将牌。你获得武将牌上的技能。每到你的回合开始时或你受到一次伤害后，你随机获得一张武将牌。你可以将拥有锁定技的武将牌当做【闪】使用或打出；将拥有主公技的武将牌当做普通【杀】使用或打出；将拥有限定技的武将牌当做【桃】使用或打出；将拥有觉醒技的武将牌当做【无懈可击】使用或打出。出牌阶段，你可以移除任意技能",
-                            yzyy_huanshen1: "幻神·生",
-                            yzyy_huanshen2: "幻神·幻",
-                            yzyy_huanshen3: "幻神·桃",
-                            yzyy_huanshen4: "幻神·杀",
-                            yzyy_huanshen5: "幻神·闪",
-                            yzyy_huanshen6: "幻神·无懈",
-                            yzyy_huanshen7: "幻神·灭",
                             yzyy_xuwu: "虚无",
                             yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>，当你成为一张牌的目标时，有90%的概率获得此牌,非延时锦囊对你无效。当你受到伤害时，有90%的概率防止此伤害。准备阶段，你置空判定区，并摸x张牌下（x为弃置数）。受到伤害后，若手牌大于体力，在伤害来源回合结束后自己开始一个新的回合。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫一般即死。死亡后复活。每有一名角色死亡，你增加一点体力上限，并回复一点体力。',
                             yzyy_tianxin: "天行",
@@ -1364,10 +1303,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_shenlin_info:'出牌阶段限一次，你可以展示一张手牌，并交给一名角色，然后令其获得一个【临】标记。有【临】标记的角色，回合将由你控制。其濒死时，移除【临】标记（标记最多不超过你的体力上限）<span class="bluetext" style="color:#FF6500">你可以关闭【自动发动】使技能不发动</span>',
                             yzyy_shenlin2:"降神",
                             yzyy_shenlin2_info:"神降",
+
+                            yzyy_huanshen: "幻神",
+                            yzyy_huanshen_info: "锁定技，游戏开始时，你随机获得两张武将牌。受到伤害后，你随机获得一张武将牌。你获得武将牌上的技能。你可以将拥有锁定技的武将牌当做【闪】使用或打出；将拥有主公技的武将牌当做普通【杀】使用或打出；将拥有限定技的武将牌当做【桃】使用或打出；将拥有觉醒技的武将牌当做【无懈可击】使用或打出。出牌阶段，你可以移除任意技能",
+                            yzyy_huanshen1: "幻神·生",
+                            yzyy_huanshen2: "幻神·幻",
+                            yzyy_huanshen3: "幻神·桃",
+                            yzyy_huanshen4: "幻神·杀",
+                            yzyy_huanshen5: "幻神·闪",
+                            yzyy_huanshen6: "幻神·无懈",
+                            yzyy_huanshen7: "幻神·灭",
+                            
                             yzyy_qianyi:"谦弈",
                             yzyy_qianyi_info:"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。",
-                            yzyy_siyi:"死弈",
-                            yzyy_siyi_info:"准备阶段、结束阶段或当你受到伤害、流失体力后，你选择一名角色获得1或x枚【劫】标记。（x为伤害值）拥有【劫】标记的角色，其准备阶段判定，♥跳过判定阶段本回合不能使用锦囊、♠跳过摸牌阶段随机弃置一张牌、♦跳过出牌阶段手牌上限减一、♣跳过弃牌阶段本回合不能使用基本",
+                            yzyy_siyi:"征子",
+                            yzyy_siyi_info:"你因弃置而同时失去至少两张牌时，你可以选择一名角色获得1枚【征】标记。拥有【征】标记的角色，其准备阶段判定，若为红色，随机弃置x张牌并失去x点体力、否则，获得1枚【征】标记。(x为判定次数)",
 
                         },
                     };
@@ -1446,6 +1396,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             diskURL: "",
             forumURL: "",
             version: "1.0",
-        }, files: { "character": ["yzyy_xuling.jpg","yzyy_taiyi.jpg","yzyy_zhiqi.jpg"], "card": [], "skill": [] }
+        },
     }
 })
