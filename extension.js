@@ -108,31 +108,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     var skills2 = [];
                                     if (typeof num != 'number') num = 1;
                                     while (num--) {
+                                        //随机获取武将
                                         var name = player.storage.yzyy_huanshen.list.randomRemove();
                                         var skills = lib.character[name][3].slice(0);
                                         var update = function (str, info, skill, currrentSkill) {
                                             currrentSkill = currrentSkill || skill
                                             str = str.replace(/<\/?.+?\/?>/g, '')
-                                            if (info.juexing || str.indexOf('觉醒技') == 0 || str.indexOf('限定技') == 0
-                                                || info.zhuSkill || info.limited || (info.intro && info.intro.content == 'limited')
-                                                || get.is.locked(currrentSkill)) {
-                                                if (info.limited || str.indexOf('限定技') == 0 || (info.intro && info.intro.content == 'limited')) {
-                                                    player.storage.yzyy_huanshentao = true;
-                                                    player.storage.yzyy_huanshen.limited.add(name);
-                                                }
-                                                if (str.indexOf('觉醒技') == 0 || info.juexing) {
-                                                    player.storage.yzyy_huanshenwuxie = true;
-                                                    player.storage.yzyy_huanshen.juexing.add(name);
-                                                }
-                                                if (get.is.locked(currrentSkill)) {
-                                                    player.storage.yzyy_huanshenshan = true;
-                                                    player.storage.yzyy_huanshen.locked.add(name);
-                                                }
-                                                if (info.zhuSkill || str.indexOf('主公技') == 0) {
-                                                    player.storage.yzyy_huanshensha = true;
-                                                    player.storage.yzyy_huanshen.zhuSkill.add(name);
-                                                }
+                                            
+                                            if (info.limited || str.indexOf('限定技') == 0 || (info.intro && info.intro.content == 'limited')) {
+                                                player.storage.yzyy_huanshentao = true;
+                                                player.storage.yzyy_huanshen.limited.add(name);
                                             }
+                                            if (str.indexOf('觉醒技') == 0 || info.juexing) {
+                                                player.storage.yzyy_huanshenwuxie = true;
+                                                player.storage.yzyy_huanshen.juexing.add(name);
+                                            }
+                                            if (get.is.locked(currrentSkill)) {
+                                                player.storage.yzyy_huanshenshan = true;
+                                                player.storage.yzyy_huanshen.locked.add(name);
+                                            }
+                                            if (info.zhuSkill || str.indexOf('主公技') == 0) {
+                                                player.storage.yzyy_huanshensha = true;
+                                                player.storage.yzyy_huanshen.zhuSkill.add(name);
+                                            }
+
                                             info.group && groupSkill(info.group, skill)
                                         }
                                         var groupSkill = function (skill, skillx) {
@@ -159,9 +158,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                                 update(str, info, skillx)
                                             }
                                         }
+
+                                        
                                         for (var j of skills.slice(0)) {
                                             var info = lib.skill[j]
                                             var str = lib.translate[j + "_info"]
+                                            //判断技能与描述是否存在
                                             if (!info || !str) {
                                                 skills.remove(j)
                                                 continue;
@@ -178,7 +180,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         mark.firstChild.remove();
                                     }
                                     mark.setBackground(player.name, 'character');
-                                    player.addSkill(skills2, true);
+                                    return skills2;
+                                    
+ 
                                 },
                                 update: function (player, name) {
                                     player.storage.yzyy_huanshen.owned.remove(name);
@@ -226,7 +230,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     var list = player.storage.yzyy_huanshen.locked;
                                     var str = '将拥有锁定技的武将牌当做【' + '闪' + '】使用或打出';
                                     event.dialog = ui.create.dialog(str, [list, 'character']);
-                                    var next = player.chooseButton(event.dialog, true, function (button) {
+                                    var next = player.chooseButton(event.dialog, true,function (button) {
                                         return 1;
                                     });
                                     'step 1'
@@ -349,6 +353,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     return !player.storage.yzyy_huansheninited;
                                 },
                                 content: function () {
+                                    'step 0'
                                     for (var i in lib.character) {
                                         if (lib.filter.characterDisabled2(i)) continue;
                                         player.storage.yzyy_huanshen.list.add(i);
@@ -358,7 +363,44 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         player.storage.yzyy_huanshen.list.remove([game.players[i].name1]);
                                         player.storage.yzyy_huanshen.list.remove([game.players[i].name2]);
                                     }
-                                    lib.skill.yzyy_huanshen.get(player, 2);
+                                    var list = lib.skill.yzyy_huanshen.get(player, 2);
+                                    event.dialog=ui.create.dialog('forcebutton');
+                                    event.dialog.add('选择获得一项技能');
+                                    for(var i=0;i<list.length;i++){
+                                        if(lib.translate[list[i]+'_info']){
+                                            var translation=get.translation(list[i]);
+                                            if(translation[0]=='新'&&translation.length==3){
+                                                translation=translation.slice(1,3);
+                                            }
+                                            else{
+                                                translation=translation.slice(0,2);
+                                            }
+                                            var item = event.dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+
+                                            translation+'】</div><div>'+lib.translate[list[i]+'_info']+'</div></div>');
+                                            
+                                            item.firstChild.addEventListener(lib.config.touchscreen?'touchend':'click',ui.click.button);
+                                            item.firstChild.link=list[i];
+                                            for(var j in lib.element.button){
+                                                item[j]=lib.element.button[j];
+                                            }
+                                            event.dialog.buttons.add(item.firstChild);
+                                        }
+                                    }
+                                    event.dialog.add(ui.create.div('.placeholder'));
+                                    var next = player.chooseButton(event.dialog, true,[0,Infinity], function (button) {
+                                        return 1;
+                                    });
+                                    'step 1'
+                                    event.dialog.close();
+                                    if (result.bool) {
+                                        var name = result.links;
+                                        console.log(result);
+                                        player.addSkill(name);
+                                    }
+                                    else {
+                                        event.finish();
+                                    }
+                                    
                                     player.storage.yzyy_huansheninited = true;
                                 },
                             },
@@ -373,7 +415,44 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         player.storage.yzyy_huanshen.list.length > 0;
                                 },
                                 content: function () {
-                                    lib.skill.yzyy_huanshen.get(player);
+                                    'step 0'
+                                    var list = lib.skill.yzyy_huanshen.get(player);
+                                    event.dialog=ui.create.dialog('forcebutton');
+                                    event.dialog.add('选择获得一项技能');
+                                    for(var i=0;i<list.length;i++){
+                                        if(lib.translate[list[i]+'_info']){
+                                            var translation=get.translation(list[i]);
+                                            if(translation[0]=='新'&&translation.length==3){
+                                                translation=translation.slice(1,3);
+                                            }
+                                            else{
+                                                translation=translation.slice(0,2);
+                                            }
+                                            var item = event.dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+
+                                            translation+'】</div><div>'+lib.translate[list[i]+'_info']+'</div></div>');
+                                            
+                                            item.firstChild.addEventListener(lib.config.touchscreen?'touchend':'click',ui.click.button);
+                                            item.firstChild.link=list[i];
+                                            for(var j in lib.element.button){
+                                                item[j]=lib.element.button[j];
+                                            }
+                                            event.dialog.buttons.add(item.firstChild);
+                                        }
+                                    }
+                                    event.dialog.add(ui.create.div('.placeholder'));
+                                    var next = player.chooseButton(event.dialog, true,[0,Infinity], function (button) {
+                                        return 1;
+                                    });
+                                    'step 1'
+                                    event.dialog.close();
+                                    if (result.bool) {
+                                        var name = result.links;
+                                        console.log(result);
+                                        player.addSkill(name);
+                                    }
+                                    else {
+                                        event.finish();
+                                    }
                                 },
                                 ai: {
                                     maixie: true,
@@ -964,20 +1043,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         },
                                         content: function () {
                                             "step 0"
-                                            trigger.player.storage.yzyy_siyi = 0;
-                                            "step 1"
                                             trigger.player.removeMark("yzyy_siyi_mark", 1);
                                             trigger.player.judge();
-                                            trigger.player.storage.yzyy_siyi++;
-                                            "step 2"
+                                            
+                                            "step 1"
                                             if(result.color == "red"){
-                                                trigger.player.randomDiscard(trigger.player.storage.yzyy_siyi);
-                                                trigger.player.loseHp(trigger.player.storage.yzyy_siyi);
+                                                trigger.player.randomDiscard();
+                                                trigger.player.loseHp();
                                                 delete trigger.player.storage.yzyy_siyi;
                                             }else{
                                                 trigger.player.addMark("yzyy_siyi_mark", 1);
                                             }
-                                            "step 3"
+                                            "step 2"
                                             if(trigger.player.hasMark("yzyy_siyi_mark")) event.goto(1);
                                         },
                                         sub:true,
