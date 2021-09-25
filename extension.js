@@ -89,6 +89,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 forced: true,
                                 init: function (player) {
                                     if (!player.storage.yzyy_huanshen) {
+                                        player.storage.yzyy_huanshenzhi = false;
                                         player.storage.yzyy_huanshensha = false;
                                         player.storage.yzyy_huanshentao = false;
                                         player.storage.yzyy_huanshenshan = false;
@@ -101,75 +102,131 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                             juexing: [],
                                             limited: [],
                                             locked: [],
+                                            common:[],
                                         }
                                     }
                                 },
+                                selectSkills: function (player, list) {
+                                    'step 0'
+                                    event.dialog=ui.create.dialog('forcebutton');
+                                    event.dialog.add('选择获得一项技能');
+                                    for(var i=0;i<list.length;i++){
+                                        if(lib.translate[list[i]+'_info']){
+                                            var translation=get.translation(list[i]);
+                                            if(translation[0]=='新'&&translation.length==3){
+                                                translation=translation.slice(1,3);
+                                            }
+                                            else{
+                                                translation=translation.slice(0,2);
+                                            }
+                                            var item = event.dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+
+                                            translation+'】</div><div>'+lib.translate[list[i]+'_info']+'</div></div>');
+                                            
+                                            item.firstChild.addEventListener(lib.config.touchscreen?'touchend':'click',ui.click.button);
+                                            item.firstChild.link=list[i];
+                                            for(var j in lib.element.button){
+                                                item[j]=lib.element.button[j];
+                                            }
+                                            event.dialog.buttons.add(item.firstChild);
+                                        }
+                                    }
+                                    event.dialog.add(ui.create.div('.placeholder'));
+                                    var next = player.chooseButton(event.dialog, true,[0,Infinity], function (button) {
+                                        return 1;
+                                    });
+                                    'step 1'
+                                    event.dialog.close();
+                                    if (result.bool) {
+                                        var names = result.links;
+                                        player.addSkill(names);
+                                        for(var i=0; i<names.length;i++) player.popup(names[i]);
+                                    }
+                                    else {
+                                        event.finish();
+                                    }
+                                },
+                                judgeSkillType: function(player, name){
+                                    var update = function (str, info, skill, currrentSkill) {
+                                        currrentSkill = currrentSkill || skill
+                                        str = str.replace(/<\/?.+?\/?>/g, '')
+                                        var common = 0;
+                                        
+                                        if (info.limited || (info.intro && info.intro.content == 'limited') ||  str.indexOf('限定技') == 0) {
+                                            player.storage.yzyy_huanshen.limited.add(name);
+                                            player.storage.yzyy_huanshentao = true;
+                                            common += 1;
+                                        }
+                                        if (info.juexing || str.indexOf('觉醒技') == 0) {
+                                            player.storage.yzyy_huanshen.juexing.add(name);
+                                            player.storage.yzyy_huanshenwuxie = true;
+                                            common += 1;
+                                        }
+                                        if (get.is.locked(currrentSkill)) {
+                                            player.storage.yzyy_huanshen.locked.add(name);
+                                            player.storage.yzyy_huanshenshan = true;
+                                            common += 1;
+                                        }
+                                        if (info.zhuSkill || str.indexOf('主公技') == 0) {
+                                            player.storage.yzyy_huanshen.zhuSkill.add(name);
+                                            player.storage.yzyy_huanshensha = true;
+                                            common += 1;
+                                        }
+                                        
+                                        if(info.group){
+                                            common += groupSkill(info.group, skill)
+                                        }
+
+                                        return common;
+                                    }
+                                    var groupSkill = function (skill, skillx) {
+                                        var common = 0;
+                                        if (Array.isArray(skill)) {
+                                            for (var i of skill) {
+                                                var str = lib.translate[i + '_info'];
+                                                var info = lib.skill[i];
+                                                if (!str) str = ""
+                                                if (!info) {
+                                                    skills.remove(skillx)
+                                                    continue;
+                                                }
+                                                common += update(str, info, skillx, i)
+                                            }
+                                        } else {
+                                            var info = lib.skill[skill]
+                                            if (!info) return false
+                                            var str = lib.translate[skill + '_info']
+                                            if (!str) str = ""
+                                            common += update(str, info, skillx)
+                                        }
+                                        return common;
+                                    }
+                                    var skills = lib.character[name][3].slice(0);
+                                    //检测该武将是否有无特殊技能
+                                    var common = 0;
+                                    for (var j of skills.slice(0)) {
+                                        var info = lib.skill[j]
+                                        var str = lib.translate[j + "_info"]
+                                        //判断技能与描述是否存在
+                                        if (!info || !str) {
+                                            skills.remove(j)
+                                            continue;
+                                        }
+                                        common += update(str, info, j);
+                                    }
+                                    if(common == 0){
+                                        player.storage.yzyy_huanshen.common.add(name);
+                                        player.storage.yzyy_huanshenzhi = true;
+                                    }
+                                    return skills;
+                                }, 
                                 get: function (player, num) {
                                     var skills2 = [];
                                     if (typeof num != 'number') num = 1;
                                     while (num--) {
                                         //随机获取武将
                                         var name = player.storage.yzyy_huanshen.list.randomRemove();
-                                        var skills = lib.character[name][3].slice(0);
-                                        var update = function (str, info, skill, currrentSkill) {
-                                            currrentSkill = currrentSkill || skill
-                                            str = str.replace(/<\/?.+?\/?>/g, '')
-                                            
-                                            if (info.limited || str.indexOf('限定技') == 0 || (info.intro && info.intro.content == 'limited')) {
-                                                player.storage.yzyy_huanshentao = true;
-                                                player.storage.yzyy_huanshen.limited.add(name);
-                                            }
-                                            if (str.indexOf('觉醒技') == 0 || info.juexing) {
-                                                player.storage.yzyy_huanshenwuxie = true;
-                                                player.storage.yzyy_huanshen.juexing.add(name);
-                                            }
-                                            if (get.is.locked(currrentSkill)) {
-                                                player.storage.yzyy_huanshenshan = true;
-                                                player.storage.yzyy_huanshen.locked.add(name);
-                                            }
-                                            if (info.zhuSkill || str.indexOf('主公技') == 0) {
-                                                player.storage.yzyy_huanshensha = true;
-                                                player.storage.yzyy_huanshen.zhuSkill.add(name);
-                                            }
-
-                                            info.group && groupSkill(info.group, skill)
-                                        }
-                                        var groupSkill = function (skill, skillx) {
-                                            if (Array.isArray(skill)) {
-                                                for (var i of skill) {
-                                                    var str = lib.translate[i + '_info'];
-                                                    var info = lib.skill[i];
-                                                    if (!str) str = ""
-                                                    if (!info) {
-                                                        skills.remove(skillx)
-                                                        continue;
-                                                    }
-                                                    if (player.skills.contains(i)) {
-                                                        skills.remove(skillx);
-                                                        continue;
-                                                    }
-                                                    update(str, info, skillx, i)
-                                                }
-                                            } else {
-                                                var info = lib.skill[skill]
-                                                if (!info) return false
-                                                var str = lib.translate[skill + '_info']
-                                                if (!str) str = ""
-                                                update(str, info, skillx)
-                                            }
-                                        }
-
+                                        var skills = lib.skill.yzyy_huanshen.judgeSkillType(player,name);
                                         
-                                        for (var j of skills.slice(0)) {
-                                            var info = lib.skill[j]
-                                            var str = lib.translate[j + "_info"]
-                                            //判断技能与描述是否存在
-                                            if (!info || !str) {
-                                                skills.remove(j)
-                                                continue;
-                                            }
-                                            update(str, info, j);
-                                        }
                                         skills2 = skills2.concat(skills);
                                         player.storage.yzyy_huanshen.owned.push(name);
                                         player.popup(name);
@@ -181,24 +238,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     }
                                     mark.setBackground(player.name, 'character');
                                     return skills2;
-                                    
- 
                                 },
                                 update: function (player, name) {
+                                    //清除数组里的技能
                                     player.storage.yzyy_huanshen.owned.remove(name);
-                                    if (player.storage.yzyy_huanshen.zhuSkill.includes(name)) {
-                                        player.storage.yzyy_huanshen.zhuSkill.remove(name);
+                                    player.storage.yzyy_huanshen.common.remove(name);
+                                    player.storage.yzyy_huanshen.zhuSkill.remove(name);
+                                    player.storage.yzyy_huanshen.locked.remove(name);
+                                    player.storage.yzyy_huanshen.limited.remove(name);
+                                    player.storage.yzyy_huanshen.juexing.remove(name);
+                                    //添加到待选列表
+                                    if(Array.isArray(name)){
+                                        for(var i=0; i<name.length;i++)
+                                            player.storage.yzyy_huanshen.list.push(name[i]);
+                                    }else{
+                                        player.storage.yzyy_huanshen.list.push(name);
                                     }
-                                    if (player.storage.yzyy_huanshen.locked.includes(name)) {
-                                        player.storage.yzyy_huanshen.locked.remove(name);
-                                    }
-                                    if (player.storage.yzyy_huanshen.limited.includes(name)) {
-                                        player.storage.yzyy_huanshen.limited.remove(name);
-                                    }
-                                    if (player.storage.yzyy_huanshen.juexing.includes(name)) {
-                                        player.storage.yzyy_huanshen.juexing.remove(name);
-                                    }
-                                    player.storage.yzyy_huanshen.list.push(name);
+                                    
+                                    //重新判断是否拥有虚拟牌
+                                    if (player.storage.yzyy_huanshen.common.length < 1)
+                                        player.storage.yzyy_huanshenzhi = false;
                                     if (player.storage.yzyy_huanshen.zhuSkill.length < 1)
                                         player.storage.yzyy_huanshensha = false;
                                     if (player.storage.yzyy_huanshen.locked.length < 1)
@@ -276,6 +335,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         event.finish();
                                     }
                                 },
+                                prezhiheng: function(){
+                                    'step 0'
+                                    var list = player.storage.yzyy_huanshen.common;
+                                    var str = '选择任意其他武将牌弃置，并莫等量的牌';
+                                    event.dialog = ui.create.dialog(str, [list, 'character']);
+                                    var next = player.chooseButton(event.dialog, true,[0, Infinity], function (button) {
+                                        return 1;
+                                    });
+                                    'step 1'
+                                    if (result.bool) {
+                                        var names = result.links;
+                                        player.draw(names.length);
+                                        lib.skill.yzyy_huanshen.update(player, names);
+                                    }
+                                    else {
+                                        event.finish();
+                                    }
+                                },
                                 ai: {
                                     skillTagFilter: function (player, tag) {
                                         switch (tag) {
@@ -298,7 +375,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     respondShan: true,
                                     threaten: 3,
                                 },
-                                group: ["yzyy_huanshen1", "yzyy_huanshen2", "yzyy_huanshen3", "yzyy_huanshen4", "yzyy_huanshen5", "yzyy_huanshen6", "yzyy_huanshen7"],
+                                group: ["yzyy_huanshen1", "yzyy_huanshen2", "yzyy_huanshen3", "yzyy_huanshen4", "yzyy_huanshen5", "yzyy_huanshen6", "yzyy_huanshen7", "yzyy_huanshen8"],
                                 intro: {
                                     content: function (storage, player) {
                                         var str = '';
@@ -321,7 +398,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     mark: function (dialog, content, player) {
                                         var list = content.owned;
                                         if (list.length) {
-                                            dialog.addAuto([list, 'character']);
+                                            // dialog.addAuto([list, 'character']);
+                                            if (content.common.length > 0) {
+                                                dialog.addText('普通武将（制衡）');
+                                                dialog.add([content.common, 'character']);
+                                            };
                                             if (content.locked.length > 0) {
                                                 dialog.addText('拥有锁定技的武将（闪）');
                                                 dialog.add([content.locked, 'character']);
@@ -345,10 +426,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             },
                             yzyy_huanshen1: {
                                 trigger: {
-                                    global: ["gameStart",],
+                                    global: ["gameStart"],
                                 },
                                 forced: true,
-                                priority: 10,
+                                priority: Infinity,
                                 filter: function (event, player) {
                                     return !player.storage.yzyy_huansheninited;
                                 },
@@ -358,11 +439,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         if (lib.filter.characterDisabled2(i)) continue;
                                         player.storage.yzyy_huanshen.list.add(i);
                                     }
-                                    for (var i = 0; i < game.players.length; i++) {
-                                        player.storage.yzyy_huanshen.list.remove([game.players[i].name]);
-                                        player.storage.yzyy_huanshen.list.remove([game.players[i].name1]);
-                                        player.storage.yzyy_huanshen.list.remove([game.players[i].name2]);
-                                    }
+                                    // for (var i = 0; i < game.players.length; i++) {
+                                    //     player.storage.yzyy_huanshen.list.remove([game.players[i].name]);
+                                    //     player.storage.yzyy_huanshen.list.remove([game.players[i].name1]);
+                                    //     player.storage.yzyy_huanshen.list.remove([game.players[i].name2]);
+                                    // }
                                     var list = lib.skill.yzyy_huanshen.get(player, 2);
                                     event.dialog=ui.create.dialog('forcebutton');
                                     event.dialog.add('选择获得一项技能');
@@ -393,14 +474,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     'step 1'
                                     event.dialog.close();
                                     if (result.bool) {
-                                        var name = result.links;
-                                        console.log(result);
-                                        player.addSkill(name);
+                                        var names = result.links;
+                                        player.addSkill(names);
+                                        for(var i=0; i<names.length;i++) player.popup(names[i]);
                                     }
                                     else {
                                         event.finish();
                                     }
-                                    
                                     player.storage.yzyy_huansheninited = true;
                                 },
                             },
@@ -409,7 +489,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     player: ["phaseBegin", "damageEnd"],
                                 },
                                 forced: true,
-                                priority: 10,
+                                priority: Infinity,
                                 filter: function (event, player) {
                                     return player.storage.yzyy_huanshen && player.storage.yzyy_huanshen.list &&
                                         player.storage.yzyy_huanshen.list.length > 0;
@@ -446,9 +526,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     'step 1'
                                     event.dialog.close();
                                     if (result.bool) {
-                                        var name = result.links;
-                                        console.log(result);
-                                        player.addSkill(name);
+                                        var names = result.links;
+                                        player.addSkill(names);
+                                        for(var i=0; i<names.length;i++) player.popup(names[i]);
                                     }
                                     else {
                                         event.finish();
@@ -458,6 +538,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     maixie: true,
                                 },
                             },
+                            //限定 桃
                             yzyy_huanshen3: {
                                 forced: true,
                                 enable: ["chooseToUse", "chooseToRespond"],
@@ -602,6 +683,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     },
                                 },
                             },
+                            //主公 杀
                             yzyy_huanshen4: {
                                 forced: true,
                                 enable: ["chooseToUse", "chooseToRespond"],
@@ -681,6 +763,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     },
                                 },
                             },
+                            //锁定 闪
                             yzyy_huanshen5: {
                                 forced: true,
                                 enable: ["chooseToUse", "chooseToRespond"],
@@ -715,6 +798,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     order: 3,
                                 },
                             },
+                            //觉醒 无懈
                             yzyy_huanshen6: {
                                 forced: true,
                                 enable: ["chooseToUse", "chooseToRespond"],
@@ -754,12 +838,35 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 forced: true,
                                 enable: "phaseUse",
                                 prompt: "移除一个技能",
+                                init:function(player){
+                                    player.yzyyGetSkills=function(arg2){
+                                        var skills=this.skills.slice(0);
+                                        var i,j;
+                                        for(var i in this.additionalSkills){
+                                            if(Array.isArray(this.additionalSkills[i])&&(arg2||i.indexOf('hidden:')!==0)){
+                                                for(j=0;j<this.additionalSkills[i].length;j++){
+                                                    if(this.additionalSkills[i][j]){
+                                                        skills.add(this.additionalSkills[i][j]);
+                                                    }
+                                                }
+                                            }
+                                            else if(this.additionalSkills[i]&&typeof this.additionalSkills[i]=='string'){
+                                                skills.add(this.additionalSkills[i]);
+                                            }
+                                        }
+                                        for(var i in this.tempSkills){
+                                            skills.add(i);
+                                        }
+                                        skills.addArray(this.hiddenSkills);
+                                        return skills;
+                                    }
+                                },
                                 filter: function (card, player, target) {
                                     return true;
                                 },
                                 content: function () {
                                     'step 0'
-                                    var list = player.getSkills();
+                                    var list = player.yzyyGetSkills();
                                     list.remove(lib.character[player.name][3]);
                                     var dialog = ui.create.dialog('forcebutton');
                                     dialog.add('选择要移除的技能');
@@ -787,6 +894,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     player.removeSkill(link);
                                     game.log(player, '移除了技能', '【' + get.translation(link) + '】');
                                     game.delay();
+                                },
+                            },
+                            yzyy_huanshen8: {
+                                forced: true,
+                                enable: "phaseUse",
+                                prompt: "移除一个武将",
+                                filter: function (card, player, target) {
+                                    if (!player.storage.yzyy_huanshenzhi) return false;
+                                    return true;
+                                },
+                                content: function () {
+                                    var next = game.createEvent('yzyy_huanshenCards');
+                                    next.player = player;
+                                    next.setContent(lib.skill.yzyy_huanshen.prezhiheng);
                                 },
                             },
                             yzyy_xuwu: {
@@ -1388,8 +1509,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_huanshen3: "幻神·桃",
                             yzyy_huanshen4: "幻神·杀",
                             yzyy_huanshen5: "幻神·闪",
-                            yzyy_huanshen6: "幻神·无懈",
+                            yzyy_huanshen6: "幻神·防",
                             yzyy_huanshen7: "幻神·灭",
+                            yzyy_huanshen8: "幻神·制",
                             
                             yzyy_qianyi:"谦弈",
                             yzyy_qianyi_info:"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。",
