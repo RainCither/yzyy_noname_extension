@@ -69,7 +69,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                        },				
                         character:{
                             yzyy_taiyi:["male", "yinshi", 3, ["yzyy_huanshen",], []],
-                            yzyy_xuling: ["female", "shen", 3, ["yzyy_tianxin", "yzyy_guixu","yzyy_qianyi","yzyy_souxun", "yzyy_shenlin","yzyy_xuwu", ], ["boss"]],
+                            yzyy_xuling: ["female", "shen", 3, ["yzyy_tianxin", "yzyy_tongzhi","yzyy_qianyi","yzyy_guixu", "yzyy_shenlin","yzyy_xuwu", ], ["boss"]],
                             yzyy_zhiqi:["male", "yinshi", 3, ["yzyy_qianyi","yzyy_siyi"], []],
                         },
                         //武将介绍（选填）
@@ -84,8 +84,47 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         perfectPair:{},
                         //技能（必填）
                         skill: {
+
+                            yzyy_jshiyan:{
+                                audio: "2",
+                                forced: true,
+                                init: function (player) {
+                                    
+                                    // var _rcHp = get.infoHp(lib.character[player.name][2]);
+                                    // var _rcMaxHp = get.infoHp(lib.character[player.name][2]);
+                                    // Object.defineProperty(player,"hp",{
+                                    //     get(){return _rcHp;},
+                                    //     set(value){
+                                    //         _rcHp = value;
+                                    //         if(value<1){
+                                    //             this.logSkill("yzyy_jshiyan");
+                                    //             this.recover(1-value);
+                                    //         }
+                                    //     }
+                                    // });
+                                },
+                                group:["huimeng"],
+                                mod: {
+                                    maxHandcard: function (player) {
+                                        return Infinity;
+                                    },
+                                    targetInRange: function (card, player, target, now) {
+                                        return true;
+                                    },
+                                    wuxieRespondable: function (card, player, target, current) {
+                                        if (player != current) {
+                                            return false;
+                                        }
+                                    },
+                                    playerEnabled: function (card, player, target) {
+                                        return true;
+                                    },
+                                },
+                            },
+
                             yzyy_huanshen: {
                                 unique: true,
+                                locked: true,
                                 forced: true,
                                 init: function (player) {
                                     if (!player.storage.yzyy_huanshen) {
@@ -918,15 +957,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         player.removeSkill("yzyy_xuwu");
                                         return;
                                     }
+                                    
                                     player._trueMe = player;
+
+                                    //置空技能
                                     var arr = ["clearSkills", "disableSkill", "disabledSkills", "goMad", "skip", "reinit", "disableEquip", "disableJudge"];
                                     for (var i in arr) {
                                         player[arr[i]] = function () {
                                             player.popup("虚·空");
-                                            player.$fullscreenpop('这里是永恒的虚空', 'fire');
+                                            //player.$fullscreenpop('这里是永恒的虚空', 'fire');
                                         };
                                         Object.freeze(player[i]);
                                     }
+                                    //复活
+                                    var yongsheng = window.setInterval(function () {
+                                        if (player.isDead()) {
+                                            if (player.maxHp < 4) player.maxHp = 3;
+                                            player.revive(Math.max(1, player.maxHp));
+                                            player.draw(game.players.length);
+                                        }
+                                    }, 1000);
                                 },
                                 mod: {
                                     maxHandcard: function (player) {
@@ -944,21 +994,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         return true;
                                     },
                                 },
-                                group: ["yzyy_xuwu_js", "yzyy_xuwu_wl", "yzyy_xuwu_tf", "yzyy_xuwu_die", "yzyy_xuwu_ts",],
+                                group: ["yzyy_xuwu_js", "yzyy_xuwu_tf", "yzyy_xuwu_my", "yzyy_xuwu_ts",],
                                 subSkill: {
-                                    dp:{
-                                        audio: 2,
-                                        forced: true,
-                                        trigger: {
-                                            player: "damageAfter",
-                                        },
-                                        filter: function (event, player, name) {
-                                            return player.countCards("h") > player.hp;
-                                        },
-                                        content: function () {
-                                            player.insertPhase();
-                                        },
-                                    },
                                     ts:{
                                         trigger: {
                                             global: "dieAfter",
@@ -971,73 +1008,40 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         },
                                         sub:true,
                                     },
-                                    die: {
+                                    my: {
                                         trigger: {
-                                            player: ["dieBegin",],
+                                            player: ["dieBegin","loseMaxHpBegin", "loseHpBefore", "linkBefore", "turnOverBefore",],
                                         },
                                         priority: Infinity,
                                         forced: true,
                                         forceDie: true,
-                                        init: function (player) {
-                                            var yongsheng = window.setInterval(function () {
-                                                if (player.isDead()) {
-                                                    if (player.maxHp < 4) player.maxHp = 3;
-                                                    player.revive(Math.max(1, player.maxHp));
-                                                    player.draw(game.players.length);
-                                                }
-                                            }, 1000);
-                                        },
                                         content: function () {
                                             if (player.hp > 0) {
                                                 trigger.untrigger;
                                                 trigger.finish();
-                                            }else if(trigger.source.countCards("he") > 0 || player.maxHp < 1){
-                                                trigger.untrigger;
-                                                trigger.finish();
-                                                if (player.maxHp < 4) player.maxHp = 3;
-                                                player.hp = 1;
-                                                player.update();
                                             }
-                                            
                                         },
                                         sub:true,
                                     },
                                     tf:{
                                         trigger: {
-                                            target: "useCardToBefore",
+                                            player: ["damageBegin",],
+                                            target: ["useCardToTargeted",],
                                         },
                                         forced: true,
                                         filter: function (event, player, name) {
-                                            if (Math.random() < 0.9 && event.target == player && event.player != player) {
-                                                return true;
-                                            }
+                                            if (Math.random() < 0.9) return true;
                                             return false;
                                         },
                                         content: function () {
-                                            if (trigger.cards && get.position(trigger.cards[0]) == 'd' && get.itemtype(trigger.cards[0]) == 'card') {
-                                                player.gain(trigger.cards, 'gain2');
-                                            }
-                                            if(get.type(trigger.cards[0]) == "trick"){
-                                                trigger.untrigger();
-                                                trigger.finish();
-                                            }
-                                        },
-                                        sub: true,
-                                    },
-                                    wl: {
-                                        audio: "2",
-                                        trigger: {
-                                            player: ["loseMaxHpBegin", "loseHpBefore","damageBegin", "linkBefore", "turnOverBefore",],
-                                        },
-                                        forced: true,
-                                        filter: function (event, player, name) {
-                                            if(name == "damageBegin" && Math.random() > 0.9){
-                                                if(event.num > 1 ) event.num = 1;
-                                                return false;
-                                            } 
-                                            return true;
-                                        },
-                                        content: function () {
+                                            // if (trigger.cards && get.position(trigger.cards[0]) == 'd' && get.itemtype(trigger.cards[0]) == 'card') {
+                                            //     player.gain(trigger.cards, 'gain2');
+                                            // }
+                                            // if(get.type(trigger.cards[0]) == "trick"){
+                                            //     trigger.untrigger();
+                                            //     trigger.finish();
+                                            // }
+
                                             trigger.untrigger();
                                             trigger.finish();
                                         },
@@ -1045,7 +1049,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     },
                                     js: {
                                         trigger: {
-                                            player: "phaseJudgeBegin",
+                                            player: "phaseBegin",
                                         },
                                         forced: true,
                                         content: function () {
@@ -1188,60 +1192,38 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 forced: true,
                                 usable: 1,
                                 init:function(player){
-                                    player.storage.yzyy_tianxin_txsha = 0;
+                                    
                                 },
                                 content: function () {
-                                    "step 0"
-                                    player.storage.yzyy_tianxin_txsha = 0;
-                                    'step 1'
-                                    var card = get.cards()[0];
-                                    event.card = card;
+                                    'step 0'
+                                    var card=get.cards()[0];
+                                    event.card=card;
                                     player.showCards(card);
-                                    if (!player.hasUseTarget(card)) {
-                                        player.addTempSkill("yzyy_tianxin_txsha");
+                                    if(!player.hasUseTarget(card)){
                                         card.fix();
-                                        ui.cardPile.insertBefore(card, ui.cardPile.firstChild);
+                                        ui.cardPile.insertBefore(card,ui.cardPile.firstChild);
                                         game.updateRoundNumber();
                                         event.finish();
                                     }
+                                    'step 1'
+                                    var next=player.chooseUseTarget(card,true);
+                                    if(get.info(card).updateUsable=='phaseUse') next.addCount=false;
                                     'step 2'
-                                    var next = player.chooseUseTarget(card, true);
-                                    if (get.info(card).updateUsable == 'phaseUse') next.addCount = false;
-                                    'step 3'
-                                    if (result.bool) {
-                                        player.storage.yzyy_tianxin_txsha++;
-                                        event.goto(1);
-                                    } else {
-                                        player.addTempSkill("yzyy_tianxin_txsha");
+                                    if(result.bool) event.goto(1);
+                                    else{
                                         card.fix();
-                                        ui.cardPile.insertBefore(card, ui.cardPile.firstChild);
-                                        game.updateRoundNumber(); 
+                                        ui.cardPile.insertBefore(card,ui.cardPile.firstChild);
+                                        game.updateRoundNumber();
                                     }
                                 },
-                                subSkill:{
-                                    txsha:{
-                                        onremove:true,
-                                        mark:true,
-                                        marktext:"行",
-                                        intro:{ 
-                                            name:"天行",
-                                            content:'使用【杀】的次数上限+#',
-                                        },
-                                        mod:{
-                                            cardUsable:function(card,player,num){
-                                                if(card.name=='sha' && player.storage.yzyy_tianxin_txsha) return num + player.storage.yzyy_tianxin_txsha;
-                                            },
-                                        },
-                                    },
-                                },
                             },
-                            yzyy_guixu: {
+                            yzyy_tongzhi: {
                                 audio: "2",
                                 enable: "phaseUse",
                                 forced: true,
                                 init: function (player) {
                                     if (player.name != "yzyy_xuling") {
-                                        player.removeSkill("yzyy_guixu");
+                                        player.removeSkill("yzyy_tongzhi");
                                     }
                                 },
                                 filter: function (event, player) {
@@ -1264,10 +1246,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 content: function () {
                                     for (var i in cards) {
                                         if (cards[i].name == "sha") {
-                                            player.storage.yzyy_guixu_eff++;
+                                            player.storage.yzyy_tongzhi_eff++;
                                         }
                                     }
-                                    if (player.storage.yzyy_guixu_eff > 0) player.markSkill("yzyy_guixu_eff");
+                                    if (player.storage.yzyy_tongzhi_eff > 0) player.markSkill("yzyy_tongzhi_eff");
                                     target.chooseToDiscard(cards.length, 'he', true);
                                 },
                                 ai: {
@@ -1276,7 +1258,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         target: -1,
                                     },
                                 },
-                                group: "yzyy_guixu_eff",
+                                group: "yzyy_tongzhi_eff",
                                 subSkill: {
                                     eff: {
                                         audio: "2",
@@ -1295,15 +1277,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         forced: true,
                                         content: function () {
                                             if (!trigger.baseDamage) trigger.baseDamage = 1;
-                                            trigger.baseDamage += player.storage.yzyy_guixu_eff;
-                                            player.unmarkSkill("yzyy_guixu_eff");
-                                            player.storage.yzyy_guixu_eff = 0;
+                                            trigger.baseDamage += player.storage.yzyy_tongzhi_eff;
+                                            player.unmarkSkill("yzyy_tongzhi_eff");
+                                            player.storage.yzyy_tongzhi_eff = 0;
                                         },
                                         init: function (player) {
-                                            player.storage.yzyy_guixu_eff = 0;
+                                            player.storage.yzyy_tongzhi_eff = 0;
                                         },
                                         onremove: function (player) {
-                                            delete player.storage.yzyy_guixu_eff;
+                                            delete player.storage.yzyy_tongzhi_eff;
                                         },
                                         ai: {
                                             damageBonus: true,
@@ -1312,63 +1294,88 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     },
                                 },
                             },
-                            yzyy_souxun: {
+                            yzyy_guixu: {
                                 audio: 2,
                                 enable: 'phaseUse',
                                 forced: true,
                                 unique: true,
                                 init: function (player) {
                                     if (player.name != "yzyy_xuling") {
-                                        player.removeSkill("yzyy_souxun");
+                                        player.removeSkill("yzyy_guixu");
                                     }
                                 },
                                 filter: function (event, player, name) {
-                                    return player.countSkill('yzyy_souxun') < player.hp;
+                                    return player.countSkill('yzyy_guixu') < player.hp;
                                 },
-                                content: function () {
+                                content:function(){
                                     'step 0'
-                                    var list = [];
-                                    for (var i = 0; i < lib.inpile.length; i++) {
-                                        var name = lib.inpile[i];
-                                        if (name == 'sha') {
-                                            list.push(['基本', '', 'sha']);
-                                            list.push(['基本', '', 'sha', 'fire']);
-                                            list.push(['基本', '', 'sha', 'thunder']);
-                                        }
-                                        else if (get.type(name) == 'basic') list.push(['基本', '', name]);
-                                        else if (get.type(name) == 'equip') list.push(['装备', '', name]);
-                                        else if (get.type(name) == 'trick' || get.type(name) == 'delay') list.push(['锦囊', '', name]);
-                                        else list.push(['未知', '', name]);
-                                    }
-                                    var dialog = ui.create.dialog('搜集：选择要声明的卡牌名称', [list, 'vcard']);
-                                    player.chooseButton(dialog, function (button) {
-                                        var player = _status.event.player;
-                                        if (player.isDamaged()) return (button.link[2] == 'tao') ? 1 : -1;
-                                        if (player.countCards('h', 'sha')) return (button.link[2] == 'jiu') ? 1 : -1;
-                                        if (!player.countCards('h', 'sha')) return (button.link[2] == 'sha') ? 1 : -1;
-                                        if (player.countCards('h') < 3) return (button.link[2] == 'wuzhong') ? 1 : -1;
-                                        return Math.ceil(Math.random()) + ai.get.value(button.link[2]);
-                                    }, true);
+                                    var controls=[];
+                                    if(ui.cardPile.hasChildNodes()) controls.push('选择牌堆中的一张牌');
+                                    if(ui.discardPile.hasChildNodes()) controls.push('选择弃牌堆中的一张牌');
+                                    if(game.hasPlayer(function(current){
+                                        return current.countCards('hej')>0;
+                                    })) controls.push('选择一名角色区域内的一张牌');
+                                    if(!controls.length){event.finish();return;}
+                                    event.controls=controls;
+                                    var next=player.chooseControl();
+                                    next.set('choiceList',controls)
+                                    next.set('prompt','请选择要获得卡牌的来源');
+                                    next.ai=function(){return 0};
                                     'step 1'
-                                    player.popup(result.links[0][2]);
-                                    var card
-                                    if (result.links[0][2] == 'sha' && result.links[0][3] == 'fire') {
-                                        var attsha = function (card) { if (card.name == 'sha' && card.nature == 'fire') return true; }
-                                        card = get.cardPile(attsha);
+                                    result.control=event.controls[result.index];
+                                    var list=['弃牌堆','牌堆','角色'];
+                                    for(var i=0;i<list.length;i++){
+                                        if(result.control.indexOf(list[i])!=-1){event.index=i;break;}
                                     }
-                                    else if (result.links[0][2] == 'sha' && result.links[0][3] == 'thunder') {
-                                        var attsha = function (card) { if (card.name == 'sha' && card.nature == 'thunder') return true; }
-                                        card = get.cardPile(attsha);
+                                    if(event.index==2){
+                                        player.chooseTarget('请选择要移动的卡牌的来源',true,function(card,kagari,target){
+                                            return target.countCards('hej')>0;
+                                        });
                                     }
-                                    else if (!card) card = get.cardPile(result.links[0][2]);
-                                    if (card) player.gain(card, 'gain2');
+                                    else{
+                                        var source=ui[event.index==0?'discardPile':'cardPile'].childNodes;
+                                        var list=[];
+                                        for(var i=0;i<source.length;i++) list.push(source[i]);
+                                        player.chooseButton(['请选择要获得的卡牌',list],true).ai=get.buttonValue;
+                                    }
+                                    'step 2'
+                                    if(event.index==2){
+                                        player.line(result.targets[0]);
+                                        event.target1=result.targets[0];
+                                        player.choosePlayerCard(result.targets[0],true,'hej').set('visible',true);
+                                    }
+                                    else{
+                                        event.card=result.links[0];
+                                    }
+                                    'step 3'
+                                    if(event.index==2) event.card=result.cards[0];
+                                    'step 4'
+                                    var list=['手牌区'];
+                                    if(lib.card[card.name].type=='equip'&&player.isEmpty(lib.card[card.name].subtype)) list.push('装备区');
+                                    if(list.length==1) event._result={control:list[0]};
+                                    else{
+                                        player.chooseControl(list).set('prompt','把'+get.translation(card)+'置入...').ai=function(){return 0};
+                                    }
+                                    'step 5'
+                                    
+                                    if(result.control=='手牌区'){
+                                        var next=player.gain(card);
+                                        if(event.target1){
+                                            next.source=event.target1;
+                                            next.animate='giveAuto';
+                                        }
+                                        else next.animate='draw';
+                                    }
+                                    else if(result.control=='装备区'){
+                                        if(event.target1) event.target1.$give(card,player);
+                                        player.equip(card);
+                                    }                
+                                    'step 6'
+                                    game.updateRoundNumber();
                                 },
-                                ai: {
-                                    threaten: 1.5,
-                                    result: {
-                                        player: 1,
-                                    },
-                                    order: 9,
+                                ai:{
+                                    order:10,
+                                    result:{player:1},
                                 },
                             },
                             yzyy_shenlin: {
@@ -1489,21 +1496,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_xuling: '虚琳',
                             yzyy_zhiqi:"执棋",
 
+                            yzyy_jshiyan:"实验",
+                            yzyy_jshiyan_info:"仅供测试使用",
+
                             yzyy_xuwu: "虚无",
-                            yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>，当你成为一张牌的目标时，有90%的概率获得此牌,非延时锦囊对你无效。当你受到伤害时，有90%的概率防止此伤害。准备阶段，你置空判定区，并摸x张牌下（x为弃置数）。受到伤害后，若手牌大于体力，在伤害来源回合结束后自己开始一个新的回合。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫一般即死。死亡后复活。每有一名角色死亡，你增加一点体力上限，并回复一点体力。',
-                            yzyy_tianxin: "天行",
-                            yzyy_tianxin_info: "出牌阶段限一次，你可展示牌堆顶的一张牌并使用之。若如此做，你重复此流程，直到你以此法展示的牌无法使用为止。每以此法使用一张牌，你使用杀的上限+1。",
-                            yzyy_guixu: "同掷",
-                            yzyy_guixu_info: "出牌阶段，你可以弃置X张牌，选择一名目标也弃置X张牌。若你弃置的牌中有杀，则下次【杀】的伤害加y（y为你弃置杀的数量）。",
-                            yzyy_souxun: "铸宝",
-                            yzyy_souxun_info: '出牌阶段限x次，你可以声明一张卡牌名称，然后若牌堆里有和你声明的同名称卡牌，你随机获得一张。（x为你的体力值）',
+                            yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>，当你成为一张牌的目标或即将受到伤害时，有90%的概率免疫,回合开始时，你置空判定区。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫即死。有人死亡时增加一点体力上限。',
+                            yzyy_tianxin: "寂灭",
+                            yzyy_tianxin_info: "出牌阶段限一次，你可展示牌堆顶的一张牌并使用之。若如此做，你重复此流程，直到你以此法展示的牌无法使用为止。",
+                            yzyy_tongzhi: "同掷",
+                            yzyy_tongzhi_info: "出牌阶段，你可以弃置X张牌，选择一名目标也弃置X张牌。若你弃置的牌中有杀，则下次【杀】的伤害加y（y为你弃置杀的数量）。",
+                            yzyy_guixu: "归墟",
+                            yzyy_guixu_info: '出牌阶段限X次，你可以选择一张不在游戏外的牌，然后将其置于你的手牌/装备区内。(x为你的体力值）',
                             yzyy_shenlin:"神临",
                             yzyy_shenlin_info:'出牌阶段限一次，你可以展示一张手牌，并交给一名角色，然后令其获得一个【临】标记。有【临】标记的角色，回合将由你控制。其濒死时，移除【临】标记（标记最多不超过你的体力上限）<span class="bluetext" style="color:#FF6500">你可以关闭【自动发动】使技能不发动</span>',
                             yzyy_shenlin2:"降神",
                             yzyy_shenlin2_info:"神降",
 
                             yzyy_huanshen: "幻神",
-                            yzyy_huanshen_info: "锁定技，游戏开始时，你随机获得两张武将牌。受到伤害后，你随机获得一张武将牌。你获得武将牌上的技能。你可以将拥有锁定技的武将牌当做【闪】使用或打出；将拥有主公技的武将牌当做普通【杀】使用或打出；将拥有限定技的武将牌当做【桃】使用或打出；将拥有觉醒技的武将牌当做【无懈可击】使用或打出。出牌阶段，你可以移除任意技能",
+                            yzyy_huanshen_info: "锁定技，游戏开始时，你随机获得两张武将牌。受到伤害后，你随机获得一张武将牌。你选择获得武将牌上的技能。你可以将拥有锁定技的武将牌当做【闪】使用或打出；将拥有主公技的武将牌当做普通【杀】使用或打出；将拥有限定技的武将牌当做【桃】使用或打出；将拥有觉醒技的武将牌当做【无懈可击】使用或打出。出牌阶段，你可以移除任意技能",
                             yzyy_huanshen1: "幻神·生",
                             yzyy_huanshen2: "幻神·幻",
                             yzyy_huanshen3: "幻神·桃",
