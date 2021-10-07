@@ -69,8 +69,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                        },				
                         character:{
                             yzyy_taiyi:["male", "yinshi", 3, ["yzyy_huanshen",], []],
-                            yzyy_xuling: ["female", "shen", 3, ["yzyy_tianxin", "yzyy_tongzhi","yzyy_qianyi","yzyy_guixu", "yzyy_shenlin","yzyy_xuwu", ], ["boss"]],
-                            yzyy_zhiqi:["male", "yinshi", 3, ["yzyy_qianyi","yzyy_siyi"], []],
+                            yzyy_xuling: ["female", "shen", 3, ["yzyy_xuwu","yzyy_jimie", "yzyy_xushi","yzyy_yichuang","yzyy_guixu", "yzyy_shenlin",], ["boss"]],
+                            yzyy_zhiqi:["male", "yinshi", 3, ["yzyy_yichuang","yzyy_yishou","yzyy_zhengzi"], []],
                         },
                         //武将介绍（选填）
                         characterIntro:{
@@ -959,6 +959,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     }
                                     
                                     player._trueMe = player;
+                                    Object.freeze(player._trueMe);
 
                                     //置空技能
                                     var arr = ["clearSkills", "disableSkill", "disabledSkills", "goMad", "skip", "reinit", "disableEquip", "disableJudge"];
@@ -1029,9 +1030,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                             target: ["useCardToTargeted",],
                                         },
                                         forced: true,
-                                        filter: function (event, player, name) {
-                                            if (Math.random() < 0.9) return true;
-                                            return false;
+                                        mark: true,
+                                        marktext:"墟",
+                                        intro: {
+                                            name:"归墟",
+                                            content:'mark',
                                         },
                                         content: function () {
                                             // if (trigger.cards && get.position(trigger.cards[0]) == 'd' && get.itemtype(trigger.cards[0]) == 'card') {
@@ -1041,9 +1044,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                             //     trigger.untrigger();
                                             //     trigger.finish();
                                             // }
-
-                                            trigger.untrigger();
-                                            trigger.finish();
+                                            player.addMark("yzyy_xuwu_tf");
+                                            if (Math.random() < 0.9) {
+                                                trigger.untrigger();
+                                                trigger.finish();
+                                            }
                                         },
                                         sub: true,
                                     },
@@ -1063,70 +1068,64 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     },
                                 },
                             },
-                            yzyy_qianyi: {
+                            yzyy_yichuang:{
                                 audio: "2",
                                 forced: true,
-                                group: ["yzyy_qianyi_gong","yzyy_qianyi_shou"],
-                                subSkill: {
-                                    gong:{
-                                        audio: "2",
-                                        trigger: {
-                                            source: "damageBegin",
-                                        },
-                                        priority: -9,
-                                        forced: true,
-                                        content: function () {
-                                            "step 0"
-                                            player.chooseTarget('是否选择一名角色让其成为此伤害的来源？').set('ai', function (target) {
-                                                return -ai.get.attitude(player, target);
-                                            });
-                                            "step 1"
-                                            if (result.bool && result.targets && result.targets.length) {
-                                                player.line(result.targets[0], 'green');
-                                                trigger.source = result.targets[0];
-                                                result.targets[0].line(trigger.player, 'green');
-                                                trigger.trigger();
-                                            }else{
-                                                delete trigger.source;
-                                            }
-                                        },
-                                        sub: true,
-                                    },
-                                    shou:{
-                                        audio: "2",
-                                        trigger: {
-                                            player: "damageBefore",
-                                        },
-                                        forced: true,
-                                        content: function () {
-                                            'step 0'
-                                            event.card = get.cards();
-                                            trigger.player.showCards(event.card);
-                                            game.cardsDiscard(event.card);
-                                            'step 1'
-                                            if( get.color(event.card) == "black") {
-                                            player.draw(2 * trigger.num);
-                                            event.finish();
-                                            }
-                                            'step 2'
-                                            player.chooseTarget('是否选择一名角色转移伤害？', function (card, player, target) {
-                                                return player != target;
-                                            }).set('ai', function (target) {
-                                                return -ai.get.attitude(player, target);
-                                            });
-                                            'step 3'
-                                            trigger.cancel();
-                                            if (result.bool && result.targets && result.targets.length) {
-                                                player.line(result.targets[0], 'green');
-                                                result.targets[0].damage(trigger.source || 'nosource', trigger.num, trigger.nature);
-                                            }
-                                        },
-                                        sub: true,
-                                    },
+                                trigger: {
+                                    source: "damageBegin",
                                 },
+                                priority: -9,
+                                forced: true,
+                                content: function () {
+                                    "step 0"
+                                    player.chooseTarget('是否选择一名角色让其成为此伤害的来源？').set('ai', function (target) {
+                                        return -ai.get.attitude(player, target);
+                                    });
+                                    "step 1"
+                                    if (result.bool && result.targets && result.targets.length) {
+                                        player.line(result.targets[0], 'green');
+                                        trigger.source = result.targets[0];
+                                        result.targets[0].line(trigger.player, 'green');
+                                        trigger.trigger();
+                                    }else{
+                                        delete trigger.source;
+                                    }
+                                }
                             },
-                            yzyy_siyi: {
-                                group:["yzyy_siyi_mark","yzyy_siyi_buff"],
+                            yzyy_yishou: {
+                                audio: "2",
+                                forced: true,
+                                audio: "2",
+                                trigger: {
+                                    player: "damageBefore",
+                                },
+                                forced: true,
+                                content: function () {
+                                    'step 0'
+                                    event.card = get.cards();
+                                    trigger.player.showCards(event.card);
+                                    game.cardsDiscard(event.card);
+                                    'step 1'
+                                    if( get.color(event.card) == "black") {
+                                    player.draw(2 * trigger.num);
+                                    event.finish();
+                                    }
+                                    'step 2'
+                                    player.chooseTarget('是否选择一名角色转移伤害？', function (card, player, target) {
+                                        return player != target;
+                                    }).set('ai', function (target) {
+                                        return -ai.get.attitude(player, target);
+                                    });
+                                    'step 3'
+                                    trigger.cancel();
+                                    if (result.bool && result.targets && result.targets.length) {
+                                        player.line(result.targets[0], 'green');
+                                        result.targets[0].damage(trigger.source || 'nosource', trigger.num, trigger.nature);
+                                    }
+                                }, 
+                            },
+                            yzyy_zhengzi: {
+                                group:["yzyy_zhengzi_mark","yzyy_zhengzi_buff"],
                                 subSkill:{
                                     mark:{
                                         trigger: {
@@ -1147,7 +1146,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                             'step 1'
                                             if (result.bool && result.targets && result.targets.length) {
                                                 player.line(result.targets[0], 'green');
-                                                result.targets[0].addMark("yzyy_siyi_mark",1);
+                                                result.targets[0].addMark("yzyy_zhengzi_mark",1);
                                             }
                                         },
                                         marktext: '征',
@@ -1164,29 +1163,29 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         priority: -9,
                                         forced: true,
                                         filter: function (event, player) {
-                                            return event.player.hasMark("yzyy_siyi_mark");
+                                            return event.player.hasMark("yzyy_zhengzi_mark");
                                         },
                                         content: function () {
                                             "step 0"
-                                            trigger.player.removeMark("yzyy_siyi_mark", 1);
+                                            trigger.player.removeMark("yzyy_zhengzi_mark", 1);
                                             trigger.player.judge();
                                             
                                             "step 1"
                                             if(result.color == "red"){
                                                 trigger.player.randomDiscard();
                                                 trigger.player.loseHp();
-                                                delete trigger.player.storage.yzyy_siyi;
+                                                delete trigger.player.storage.yzyy_zhengzi;
                                             }else{
-                                                trigger.player.addMark("yzyy_siyi_mark", 1);
+                                                trigger.player.addMark("yzyy_zhengzi_mark", 1);
                                             }
                                             "step 2"
-                                            if(trigger.player.hasMark("yzyy_siyi_mark")) event.goto(1);
+                                            if(trigger.player.hasMark("yzyy_zhengzi_mark")) event.goto(1);
                                         },
                                         sub:true,
                                     },
                                 },
                             },
-                            yzyy_tianxin: {
+                            yzyy_jimie: {
                                 audio: "2",
                                 enable: "phaseUse",
                                 forced: true,
@@ -1209,7 +1208,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     var next=player.chooseUseTarget(card,true);
                                     if(get.info(card).updateUsable=='phaseUse') next.addCount=false;
                                     'step 2'
-                                    if(result.bool) event.goto(1);
+                                    if(result.bool) event.goto(0);
                                     else{
                                         card.fix();
                                         ui.cardPile.insertBefore(card,ui.cardPile.firstChild);
@@ -1217,75 +1216,62 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     }
                                 },
                             },
-                            yzyy_tongzhi: {
+                            yzyy_xushi: {
                                 audio: "2",
                                 enable: "phaseUse",
                                 forced: true,
-                                init: function (player) {
-                                    if (player.name != "yzyy_xuling") {
-                                        player.removeSkill("yzyy_tongzhi");
+                                filter:function(event, player){
+                                    return player.countMark("yzyy_xuwu_tf") > 0;
+                                },
+                                content:function(){
+                                    'step 0'
+                                    var list = ["一"];
+                                    var count = player.countMark("yzyy_xuwu_tf")
+                                    if(count > 1) list.push("二");
+                                    if(count > 2) list.push("三");
+                                    player.chooseControl(list).set('prompt','选择要增加的伤害');
+                                    'step 1'
+                                    if(result.control=='一'){
+                                        player.storage.yzyy_xushi_eff++;
+                                        player.removeMark("yzyy_xuwu_tf");
+                                    }else if(result.control=='二'){
+                                        player.storage.yzyy_xushi_eff+=2;
+                                        player.removeMark("yzyy_xuwu_tf",2);
+                                    }if(result.control=='三'){
+                                        player.storage.yzyy_xushi_eff+=3;
+                                        player.removeMark("yzyy_xuwu_tf",3);
                                     }
+                                    player.markSkill("yzyy_xushi_eff");
+
                                 },
-                                filter: function (event, player) {
-                                    return player.countCards('h') > 0 && game.hasPlayer(function (current) { return current != player && current.countCards('he') > 0});
-                                },
-                                filterCard: true,
-                                selectCard: function () {
-                                    if (ui.selected.targets.length) return [1, ui.selected.targets[0].countCards('h')];
-                                    return [1, Infinity];
-                                },
-                                filterTarget: function (event, player, target) {
-                                    return target != player && target.countCards('he') >= Math.max(1, ui.selected.cards.length);
-                                },
-                                check: function (card) {
-                                    if (!game.hasPlayer(function (current) {
-                                        return current != _status.event.player && get.attitude(_status.event.player, current) < 0 && current.countCards('he') > ui.selected.cards.length;
-                                    })) return 0;
-                                    return 6 - get.value(card);
-                                },
-                                content: function () {
-                                    for (var i in cards) {
-                                        if (cards[i].name == "sha") {
-                                            player.storage.yzyy_tongzhi_eff++;
-                                        }
-                                    }
-                                    if (player.storage.yzyy_tongzhi_eff > 0) player.markSkill("yzyy_tongzhi_eff");
-                                    target.chooseToDiscard(cards.length, 'he', true);
-                                },
-                                ai: {
-                                    order: 10,
-                                    result: {
-                                        target: -1,
-                                    },
-                                },
-                                group: "yzyy_tongzhi_eff",
+                                group: "yzyy_xushi_eff",
                                 subSkill: {
                                     eff: {
                                         audio: "2",
                                         mark: true,
-                                        marktext:"掷",
+                                        marktext:"势",
                                         intro: {
-                                            name:"掷杀",
-                                            content: "下一张杀的伤害基数+#",
+                                            name:"增势",
+                                            content: "下一张伤害牌造成的伤害+#",
                                         },
                                         trigger: {
                                             player: "useCard",
                                         },
                                         filter: function (event) {
-                                            return event.card && event.card.name == 'sha';
+                                            return event.card && get.tag(event.card,'damage');
                                         },
                                         forced: true,
                                         content: function () {
                                             if (!trigger.baseDamage) trigger.baseDamage = 1;
-                                            trigger.baseDamage += player.storage.yzyy_tongzhi_eff;
-                                            player.unmarkSkill("yzyy_tongzhi_eff");
-                                            player.storage.yzyy_tongzhi_eff = 0;
+                                            trigger.baseDamage += player.storage.yzyy_xushi_eff;
+                                            player.unmarkSkill("yzyy_xushi_eff");
+                                            player.storage.yzyy_xushi_eff = 0;
                                         },
                                         init: function (player) {
-                                            player.storage.yzyy_tongzhi_eff = 0;
+                                            player.storage.yzyy_xushi_eff = 0;
                                         },
                                         onremove: function (player) {
-                                            delete player.storage.yzyy_tongzhi_eff;
+                                            delete player.storage.yzyy_xushi_eff;
                                         },
                                         ai: {
                                             damageBonus: true,
@@ -1501,10 +1487,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
                             yzyy_xuwu: "虚无",
                             yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>，当你成为一张牌的目标或即将受到伤害时，有90%的概率免疫,回合开始时，你置空判定区。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫即死。有人死亡时增加一点体力上限。',
-                            yzyy_tianxin: "寂灭",
-                            yzyy_tianxin_info: "出牌阶段限一次，你可展示牌堆顶的一张牌并使用之。若如此做，你重复此流程，直到你以此法展示的牌无法使用为止。",
-                            yzyy_tongzhi: "同掷",
-                            yzyy_tongzhi_info: "出牌阶段，你可以弃置X张牌，选择一名目标也弃置X张牌。若你弃置的牌中有杀，则下次【杀】的伤害加y（y为你弃置杀的数量）。",
+                            yzyy_jimie: "寂灭",
+                            yzyy_jimie_info: "出牌阶段限一次，你可展示牌堆顶的一张牌并使用之。若如此做，你重复此流程，直到你以此法展示的牌无法使用为止。",
+                            yzyy_xushi: "蓄势",
+                            yzyy_xushi_info: "出牌阶段，你每次可以移去1-3个【虚】，使下次伤害牌的伤害加1-3。",
                             yzyy_guixu: "归墟",
                             yzyy_guixu_info: '出牌阶段限X次，你可以选择一张不在游戏外的牌，然后将其置于你的手牌/装备区内。(x为你的体力值）',
                             yzyy_shenlin:"神临",
@@ -1523,10 +1509,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_huanshen7: "幻神·灭",
                             yzyy_huanshen8: "幻神·制",
                             
-                            yzyy_qianyi:"谦弈",
-                            yzyy_qianyi_info:"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。",
-                            yzyy_siyi:"征子",
-                            yzyy_siyi_info:"你因弃置而同时失去至少两张牌时，你可以选择一名角色获得1枚【征】标记。拥有【征】标记的角色，其准备阶段判定，若为红色，随机弃置x张牌并失去x点体力、否则，获得1枚【征】标记。(x为判定次数)",
+                            yzyy_yichuang:"易創",
+                            yzyy_yichuang_info:"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。",
+                            yzyy_yishou:"弈守",
+                            yzyy_yishou_info:"锁定技。当你受到伤害时，展示牌堆顶的一张牌，然后置入弃牌堆。若结果为红色，你可以选择一名角色替你承受此次伤害。若为黑色，你摸2x张牌。(x为此次受到的伤害值)。",
+                            yzyy_zhengzi:"征子",
+                            yzyy_zhengzi_info:"你因弃置而同时失去至少两张牌时，你可以选择一名角色获得1枚【征】标记。拥有【征】标记的角色，其准备阶段判定，若为红色，随机弃置x张牌并失去x点体力、否则，获得1枚【征】标记。(x为判定次数)",
 
                         },
                     };
