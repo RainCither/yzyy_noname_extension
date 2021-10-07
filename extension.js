@@ -959,8 +959,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     }
                                     
                                     player._trueMe = player;
-                                    Object.freeze(player._trueMe);
-
+                                    
                                     //置空技能
                                     var arr = ["clearSkills", "disableSkill", "disabledSkills", "goMad", "skip", "reinit", "disableEquip", "disableJudge"];
                                     for (var i in arr) {
