@@ -71,7 +71,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_taiyi:["male", "yinshi", 3, ["yzyy_huanshen",], []],
                             yzyy_xuling: ["female", "shen", 3, ["yzyy_xuwu","yzyy_jimie", "yzyy_xushi","yzyy_yichuang","yzyy_guixu", "yzyy_shenlin",], ["boss"]],
                             yzyy_zhiqi:["male", "yinshi", 3, ["yzyy_yichuang","yzyy_yishou","yzyy_zhengzi"], []],
-                            yzyy_xinjing:["female", "yinshi", 3, ["yzyy_fuzhi",], []],
+                            yzyy_xinjing:["female", "yinshi", 4, ["yzyy_fuzhi",], []],
                         },
                         //武将介绍（选填）
                         characterIntro:{
