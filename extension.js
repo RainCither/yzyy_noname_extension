@@ -1474,14 +1474,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
                             yzyy_fuzhi:{
                                 audio:2,
-                                trigger:{global:'roundStart'},
-                                direct:true,
+                                trigger:{
+                                    global:'gameStart',
+                                    player: "phaseZhunbeiBegin",
+                                },
+                                frequent:true,
+                                forced: true,
+                                filter: function (event, player) {
+                                    if (lib.config.autoskilllist.contains('yzyy_fuzhi')) return false;
+                                    return true;
+                                },
                                 content:function(){
                                     'step 0'
                                     player.chooseTarget(get.prompt2('yzyy_fuzhi'),lib.filter.notMe).set('ai',function(target){
                                         var player=_status.event.player;
-                                            if(player.isHealthy()) return 0;
-                                            if(player.hp<3&&player.getDamagedHp()<2) return 0;
                                             var list=[];
                                             if(lib.character[target.name]) list.addArray(lib.character[target.name][3]);
                                             if(lib.character[target.name1]) list.addArray(lib.character[target.name1][3]);
@@ -1531,7 +1537,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_jshiyan_info:"仅供测试使用",
 
                             yzyy_fuzhi:"复制",
-                            yzyy_fuzhi_info:"每轮开始时，你可以选择一名角色获取其技能",
+                            yzyy_fuzhi_info:'游戏或准备阶段开始时，你可以选择一名角色获取其技能。 <span class="bluetext" style="color:#FF6500">你可以关闭【自动发动】使技能不发动</span>',
 
                             yzyy_xuwu: "虚无",
                             yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>，当你成为一张牌的目标或即将受到伤害时，有90%的概率免疫,回合开始时，你置空判定区。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫即死。有人死亡时增加一点体力上限。',
