@@ -72,6 +72,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_xuling: ["female", "shen", 3, ["yzyy_xuwu","yzyy_jimie", "yzyy_xushi","yzyy_yichuang","yzyy_guixu", "yzyy_shenlin",], ["boss"]],
                             yzyy_zhiqi:["male", "yinshi", 3, ["yzyy_yichuang","yzyy_yishou","yzyy_zhengzi"], []],
                             yzyy_xinjing:["female", "yinshi", 4, ["yzyy_fuzhi",], []],
+                            yzyy_huanhua:["female", "yinshi", 4, ["yzyy_huanhua",], []],
                         },
                         //武将介绍（选填）
                         characterIntro:{
@@ -1478,12 +1479,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     global:'gameStart',
                                     player: "phaseZhunbeiBegin",
                                 },
-                                frequent:true,
                                 forced: true,
-                                filter: function (event, player) {
-                                    if (lib.config.autoskilllist.contains('yzyy_fuzhi')) return false;
-                                    return true;
-                                },
+                                //frequent:true,
+                                // filter: function (event, player) {
+                                //     if (lib.config.autoskilllist.contains('yzyy_fuzhi')) return false;
+                                //     return true;
+                                // },
                                 content:function(){
                                     'step 0'
                                     player.chooseTarget(get.prompt2('yzyy_fuzhi'),lib.filter.notMe).set('ai',function(target){
@@ -1521,6 +1522,90 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     }
                                 },
                             },
+
+                            yzyy_huanhua:{
+                                audio:2,
+                                trigger:{
+                                    global:'gameStart',
+                                    player: "phaseZhunbeiBegin",
+                                },
+                                forced: true,
+                                priority: 20,
+                                init:function(player){
+                                    var list=[],skills=[];
+                                    for(var i in lib.character){
+                                        if(lib.filter.characterDisabled2(i)||lib.filter.characterDisabled(i)) continue;
+                                        list.push(i);
+                                    }
+                                    for(var i of list){
+                                        for(var j of lib.character[i][3]){
+                                            if(j=='yzyy_huanhua') continue;
+                                            var skill=lib.skill[j];
+                                            if(!skill||skill.zhuSkill) continue;
+                                            var info=lib.translate[j+'_info'];
+                                            if(info) skills.add(j);
+                                        }
+                                    }
+                                    player.storage.yzyy_huanhuaList=skills;
+                                },
+                                content:function () {
+                                    'step 0'
+                                    player.chooseBool("是否发动技能 【幻化】");
+                                    'step 1'
+                                    if(!result.bool){
+                                        event.finish();
+                                        return;
+                                    }
+                                    'step 2'
+                                    var list=player.storage.yzyy_huanhuaList.randomGets(3);
+                                    if(!list.length){
+                                        event.finish();
+                                        return;
+                                    }
+                                    event.videoId=lib.status.videoId++;
+                                    var func=function(skills,id){
+                                        var dialog=ui.create.dialog('forcebutton');
+                                        dialog.videoId=id;
+                                        dialog.add('幻化：选择一个技能');
+                                        for(var i=0;i<skills.length;i++){
+                                            dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+get.translation(skills[i])+'】</div><div>'+lib.translate[skills[i]+'_info']+'</div></div>');
+                                        }
+                                        dialog.addText(' <br> ');
+                                    }
+                                    if(player.isOnline()) player.send(func,list,event.videoId);
+                                    else if(player==game.me) func(list,event.videoId);
+                                    player.chooseControl(list);
+                                    'step 3'
+                                    game.broadcastAll('closeDialog',event.videoId);
+                                    event.skill = result.control;
+                                    var list = player.storage.yzyy_huanhua;
+                                    player.chooseControl(list).set('prompt','选择要替换的技能');
+                                    'step 4'
+                                    var res = result.control;
+					                player.storage.yzyy_huanhua.remove(res);
+                                    player.removeSkill(res);
+                                    player.storage.yzyy_huanhua.push(event.skill);
+                                    player.addSkill(player.storage.yzyy_huanhua);
+                                },
+                                group:["yzyy_huanhua_start"],
+                                subSkill:{
+                                    start:{
+                                        audio:2,
+                                        forced: true,
+                                        priority: 21,
+                                        trigger:{
+                                            global:'gameStart',
+                                        },
+                                        content:function(){
+                                            var list = player.storage.yzyy_huanhuaList.randomGets(4);
+                                            if(!player.storage.yzyy_huanhua) player.storage.yzyy_huanhua = [];
+                                            player.storage.yzyy_huanhua.addArray(list);
+                                            player.addSkill(list);
+                                        }
+                                    }
+                                
+                                },
+                            },
                         },
                         //翻译（必填）
                         translate: {
@@ -1532,13 +1617,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_xuling: '虚琳',
                             yzyy_zhiqi:"执棋",
                             yzyy_xinjing:"心镜",
+                            yzyy_huanhua:"幻化",
 
                             yzyy_jshiyan:"实验",
                             yzyy_jshiyan_info:"仅供测试使用",
 
                             yzyy_fuzhi:"复制",
-                            yzyy_fuzhi_info:'游戏或准备阶段开始时，你可以选择一名角色获取其技能。 <span class="bluetext" style="color:#FF6500">你可以关闭【自动发动】使技能不发动</span>',
-
+                            yzyy_fuzhi_info:'锁定技。游戏或准备阶段开始时，你可以选择一名角色获取其技能。',
+                            yzyy_huanhua:"幻化",
+                            yzyy_huanhua_info:'锁定技。游戏开始时你随机获得四个技能。回合开始时，你可以从三个技能中选择一个替换之',
+                            
                             yzyy_xuwu: "虚无",
                             yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>，当你成为一张牌的目标或即将受到伤害时，有90%的概率免疫,回合开始时，你置空判定区。你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫即死。有人死亡时增加一点体力上限。',
                             yzyy_jimie: "寂灭",
