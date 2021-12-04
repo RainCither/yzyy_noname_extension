@@ -1579,9 +1579,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     game.broadcastAll('closeDialog',event.videoId);
                                     event.skill = result.control;
                                     var list = player.storage.yzyy_huanhua;
+                                    list.push("cancel2");
                                     player.chooseControl(list).set('prompt','选择要替换的技能');
                                     'step 4'
                                     var res = result.control;
+                                    if(res == "cancel2"){
+                                        event.finish();
+                                    }
 					                player.storage.yzyy_huanhua.remove(res);
                                     player.removeSkill(res);
                                     player.storage.yzyy_huanhua.push(event.skill);
