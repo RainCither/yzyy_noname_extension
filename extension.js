@@ -1532,6 +1532,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 forced: true,
                                 priority: 20,
                                 init:function(player){
+                                    if (player.name != "yzyy_huanhua") {
+                                        player.removeSkill("yzyy_huanhua");
+                                        return;
+                                    }
                                     var list=[],skills=[];
                                     for(var i in lib.character){
                                         if(lib.filter.characterDisabled2(i)||lib.filter.characterDisabled(i)) continue;
@@ -1602,9 +1606,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         trigger:{
                                             global:'gameStart',
                                         },
+                                        init: function (player) {
+                                            player.storage.yzyy_huanhua = [];
+                                        },
                                         content:function(){
-                                            var list = player.storage.yzyy_huanhuaList.randomGets(4);
-                                            if(!player.storage.yzyy_huanhua) player.storage.yzyy_huanhua = [];
+                                            var num = {a:1,b:2,c:4,d:6,e:8,f:10,g:12}[lib.config.extension_雨筝_yzyy_huanhua_num||'c'];
+                                            console.log(num);
+                                            console.log(lib.config);
+                                            var list = player.storage.yzyy_huanhuaList.randomGets(num);
                                             player.storage.yzyy_huanhua.addArray(list);
                                             player.addSkill(list);
                                         }
@@ -1726,6 +1735,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 "name":"使用挑战boss",
                 "intro":"重启游戏生效。可以选用本扩展中的挑战BOSS",
                  init:false,
+            },
+            yzyy_huanhua_num: {
+                name:"幻化设置 幻化技能数量",
+                intro:"幻化设置 幻化技能数量",
+                item:{
+                    a:"1",
+                    b:"2",
+                    c:"4",
+                    d:"6",
+                    e:"8",
+                    f:"10",
+                    g:"12",
+                },
+                init: "c",
+                onclick:function(item){
+                    game.saveExtensionConfig("雨筝","yzyy_huanhua_num",item);
+                }
             },
             //由于以此法添加的武将包自带的禁用按钮无法使用，需要写这个选项来禁用该武将包武将（单机）
             //"yuzheng":{"name":"将武将包名内武将设为禁用","init":false},
