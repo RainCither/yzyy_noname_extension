@@ -1427,7 +1427,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 audio:2,
                                 trigger:{
                                     global:'gameStart',
-                                    player: "phaseBeginStart",
+                                    player: ["phaseBeginStart","damageBefore"],
                                 },
                                 forced: true,
                                 priority: 20,
@@ -1466,22 +1466,38 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         event.finish();
                                         return;
                                     }
-                                    event.videoId=lib.status.videoId++;
-                                    var func=function(skills,id){
-                                        var dialog=ui.create.dialog('forcebutton');
-                                        dialog.videoId=id;
-                                        dialog.add('幻化：选择一个技能');
-                                        for(var i=0;i<skills.length;i++){
-                                            dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+get.translation(skills[i])+'】</div><div>'+lib.translate[skills[i]+'_info']+'</div></div>');
+                                    event.dialog=ui.create.dialog('forcebutton');
+                                    event.dialog.add('选择获得一项技能');
+                                    for(var i=0;i<list.length;i++){
+                                        if(lib.translate[list[i]+'_info']){
+                                            var translation=get.translation(list[i]);
+                                            if(translation[0]=='新'&&translation.length==3){
+                                                translation=translation.slice(1,3);
+                                            }
+                                            else{
+                                                translation=translation.slice(0,2);
+                                            }
+                                            var item = event.dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+
+                                            translation+'】</div><div>'+lib.translate[list[i]+'_info']+'</div></div>');
+                                            
+                                            item.firstChild.addEventListener(lib.config.touchscreen?'touchend':'click',ui.click.button);
+                                            item.firstChild.link=list[i];
+                                            for(var j in lib.element.button){
+                                                item[j]=lib.element.button[j];
+                                            }
+                                            event.dialog.buttons.add(item.firstChild);
                                         }
-                                        dialog.addText(' <br> ');
                                     }
-                                    if(player.isOnline()) player.send(func,list,event.videoId);
-                                    else if(player==game.me) func(list,event.videoId);
-                                    player.chooseControl(list);
+                                    event.dialog.add(ui.create.div('.placeholder'));
+                                    var next = player.chooseButton(event.dialog, true,[0,1], function (button) {
+                                        return 1;
+                                    });
                                     'step 3'
-                                    game.broadcastAll('closeDialog',event.videoId);
-                                    event.skill = result.control;
+                                    event.dialog.close();
+                                    if (!result.bool) {
+                                        event.finish();
+                                    }
+                                    event.skill = result.links;
                                     var list = [];
                                     list.addArray(player.storage.yzyy_huanhua);
                                     list.push("cancel2");
@@ -1498,6 +1514,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     delete player.storage[res];
                                     player.storage.yzyy_huanhua.push(event.skill);
                                     player.addSkill(player.storage.yzyy_huanhua);
+                                    player.popup(event.skill);
                                 },
                                 group:["yzyy_huanhua_start"],
                                 subSkill:{
