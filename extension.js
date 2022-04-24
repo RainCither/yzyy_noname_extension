@@ -8,6 +8,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var selectcontrols = function(event){
                     if(event.target.id == "dui-controls"){
                         event.target.addEventListener("DOMSubtreeModified", function(event){
+                            if(event.target["getElementsByClassName"] == undefined) return;
                             const list = event.target.getElementsByClassName("combo-control");
                             if(list.length != 0){
                                 list[0].style.setProperty('background-image', 'none', 'important');
