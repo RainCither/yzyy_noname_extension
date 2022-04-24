@@ -4,6 +4,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         editable:false,
         content: function (config, pack) {
 
+            //修复 概念武将与十周年UI 同时生效时 按钮背景多出来一块
+            var selectcontrols = function(event){
+                    if(event.target.id == "dui-controls"){
+                        event.target.addEventListener("DOMSubtreeModified", function(event){
+                            const list = event.target.getElementsByClassName("combo-control");
+                            if(list.length != 0){
+                                list[0].style.setProperty('background-image', 'none', 'important');
+                            }
+                        });
+                        document.removeEventListener("DOMSubtreeModified", selectcontrols);
+                    } 
+                }
+            document.addEventListener("DOMSubtreeModified", selectcontrols);
+
             //颜色代码
             var style1=document.createElement('style');
             style1.innerHTML=".player .identity[data-color='yinshi'],";
