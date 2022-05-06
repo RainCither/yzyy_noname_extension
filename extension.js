@@ -4,6 +4,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         editable:false,
         content: function (config, pack) {
 
+            
+
             //修复 概念武将与十周年UI 同时生效时 按钮背景多出来一块
             var selectcontrols = function(event){
                     if(event.target.id == "dui-controls"){
@@ -1469,7 +1471,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 },
                                 content:function () {
                                     'step 0'
-                                    player.chooseBool("是否发动技能 【幻化】");
+                                    player.chooseBool("是否发动 【幻化】");
                                     'step 1'
                                     if(!result.bool){
                                         event.finish();
@@ -1509,8 +1511,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     });
                                     'step 3'
                                     event.dialog.close();
-                                    if (!result.bool) {
+                                    if (!result.bool || result.links.length == 0) {
                                         event.finish();
+                                        return;
                                     }
                                     event.skill = result.links;
                                     var list = [];
