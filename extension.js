@@ -969,7 +969,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     }
                                     
                                     player._trueMe = player;
-                                    Object.freeze(player._trueMe);
+                                    
                                     
                                     //置空技能
                                     var arr = ["clearSkills", "disableSkill", "disabledSkills", "goMad", "skip", "reinit", "disableEquip", "disableJudge"];
@@ -1005,8 +1005,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         return true;
                                     },
                                 },
-                                group: ["yzyy_xuwu_my", "yzyy_xuwu_ts",],
+                                group: ["yzyy_xuwu_my", "yzyy_xuwu_tf", "yzyy_xuwu_ts",],
                                 subSkill: {
+                                    tf:{
+                                        trigger: {
+                                            target: "useCardToTargeted",
+                                        },
+                                        forced: true,
+                                        content: function () {
+                                            player.draw();
+                                        }
+                                    },
                                     ts:{
                                         trigger: {
                                             global: "dieAfter",
