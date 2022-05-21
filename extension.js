@@ -85,7 +85,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                            },
                        },				
                         character:{
-                            yzyy_xuling: ["female", "shen", 3, ["yzyy_xuwu","yzyy_jimie","yzyy_guixu", "yzyy_shenlin",], ["boss"]],
+                            yzyy_xuling: ["female", "shen", 1, ["yzyy_xuwu","yzyy_jimie","yzyy_guixu", "yzyy_shenlin",], ["boss"]],
 
                             yzyy_taiyi:["male", "yinshi", 3, ["yzyy_huanshen",], []],
                             yzyy_zhiqi:["male", "yinshi", 3, ["yzyy_yichuang","yzyy_yishou","yzyy_zhengzi"], []],
@@ -968,7 +968,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         return;
                                     }
                                     
-                                    player._trueMe = player;
+                                    Object.freeze(player._trueMe);
                                     
                                     
                                     //置空技能
@@ -991,7 +991,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 },
                                 mod: {
                                     maxHandcard: function (player) {
-                                        return Infinity;
+                                        return player.maxHp;
                                     },
                                     targetInRange: function (card, player, target, now) {
                                         return true;
@@ -1012,6 +1012,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                             target: "useCardToTargeted",
                                         },
                                         forced: true,
+                                        filter: function (event, player) {
+                                            return true;
+                                        },
                                         content: function () {
                                             player.draw();
                                         }
@@ -1036,10 +1039,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         forced: true,
                                         forceDie: true,
                                         content: function () {
-                                            if (player.hp > 0) {
+                                            if (player.hp > 0||player.countCards('he')>0) {
                                                 trigger.untrigger;
                                                 trigger.finish();
+                                                player.recover(1 - player.hp);
                                             }
+                                            
                                         },
                                         sub:true,
                                     },
@@ -1087,7 +1092,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     }
                                 },
                                 filter: function (event, player, name) {
-                                    return player.countSkill('yzyy_guixu') < player.hp;
+                                    return player.countSkill('yzyy_guixu') <= player.hp;
                                 },
                                 content:function(){
                                     'step 0'
@@ -1164,8 +1169,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 init: function (player) {
                                     if (player.name != "yzyy_xuling") {
                                         player.removeSkill("yzyy_shenlin");
-                                    } else {
-                                        player._trueMe = player;
                                     }
                                 },
                                 frequent:true,
@@ -1233,12 +1236,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     },
                                     rmark:{
                                         trigger: {
-                                            global: 'dyingBefore', 
+                                            global: ['dyingBefore',"damageBefore"], 
                                         },
                                         forceDie: true,
                                         forced: true,
                                         filter: function (event, player) {
-                                            return event.player.hasMark("yzyy_shenlin_mark");
+                                            return event.player.hasMark("yzyy_shenlin_mark")&&event.name == "damageBefore" ? event.num>1:true;
                                         },
                                         content: function () {
                                             trigger.player.removeMark('yzyy_shenlin_mark');
@@ -1585,15 +1588,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
                             //技能名与描述
                             yzyy_xuwu: "虚无",
-                            yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>你的手牌没有上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。免疫即死。有人死亡时增加一点体力上限。',
+                            yzyy_xuwu_info: '<span class="bluetext" style="color:#DC143C">虚无技</span>你的手牌上限为体力值上限，出牌无视距离。 铁索，翻面，混乱，体力流失，封印对你无效。有人死亡时增加一点体力上限并恢复一点体力。当你成为使用牌的目标时摸一张牌',
                             yzyy_jimie: "寂灭",
                             yzyy_jimie_info: "出牌阶段限一次，你可展示牌堆顶的一张牌并使用之。若如此做，你重复此流程，直到你以此法展示的牌无法使用为止。",
                             yzyy_guixu: "归墟",
                             yzyy_guixu_info: '出牌阶段限X次，你可以选择一张不在游戏外的牌，然后将其置于你的手牌/装备区内。(x为你的体力值）',
                             yzyy_shenlin:"神临",
-                            yzyy_shenlin_info:'出牌阶段限一次，你可以展示一张手牌，并交给一名角色，然后令其获得一个【临】标记。有【临】标记的角色，回合将由你控制。其濒死时，移除【临】标记（标记最多不超过你的体力上限）<span class="bluetext" style="color:#FF6500">你可以关闭【自动发动】使技能不发动</span>',
+                            yzyy_shenlin_info:'出牌阶段限一次，你可以展示一张手牌，并交给一名角色，然后令其获得一个【临】标记。有【临】标记的角色，回合将由你控制。其濒死或受到大于1的伤害后，移除【临】标记（标记最多不超过你的体力上限）<span class="bluetext" style="color:#FF6500">你可以关闭【自动发动】使技能不发动</span>',
                             yzyy_shenlin2:"降神",
-                            yzyy_shenlin2_info:"神降",
 
                             yzyy_huanshen: "幻神",
                             yzyy_huanshen_info: "锁定技，游戏开始时，你随机获得两张武将牌。受到伤害后，你随机获得一张武将牌。你选择获得武将牌上的技能。你可以将拥有锁定技的武将牌当做【闪】使用或打出；将拥有主公技的武将牌当做普通【杀】使用或打出；将拥有限定技的武将牌当做【桃】使用或打出；将拥有觉醒技的武将牌当做【无懈可击】使用或打出。出牌阶段，你可以移除任意技能",
