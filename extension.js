@@ -6,20 +6,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
             
 
-            //修复 概念武将与十周年UI 同时生效时 按钮背景多出来一块
-            var selectcontrols = function(event){
-                    if(event.target.id == "dui-controls"){
-                        event.target.addEventListener("DOMSubtreeModified", function(event){
-                            if(event.target["getElementsByClassName"] == undefined) return;
-                            const list = event.target.getElementsByClassName("combo-control");
-                            if(list.length != 0){
-                                list[0].style.setProperty('background-image', 'none', 'important');
-                            }
-                        });
-                        document.removeEventListener("DOMSubtreeModified", selectcontrols);
-                    } 
-                }
-            document.addEventListener("DOMSubtreeModified", selectcontrols);
+            // //修复 概念武将与十周年UI 同时生效时 按钮背景多出来一块
+            // var selectcontrols = function(event){
+            //         if(event.target.id == "dui-controls"){
+            //             event.target.addEventListener("DOMSubtreeModified", function(event){
+            //                 if(event.target["getElementsByClassName"] == undefined) return;
+            //                 const list = event.target.getElementsByClassName("combo-control");
+            //                 if(list.length != 0){
+            //                     list[0].style.setProperty('background-image', 'none', 'important');
+            //                 }
+            //             });
+            //             document.removeEventListener("DOMSubtreeModified", selectcontrols);
+            //         } 
+            //     }
+            // document.addEventListener("DOMSubtreeModified", selectcontrols);
 
             //颜色代码
             var style1=document.createElement('style');
@@ -130,103 +130,60 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                 },
                             },
 
+                            yzyy_huanshen_mark:{
+                                mark:true,//获得技能时是否显示此标记
+                                locked:true,//是否实时更新
+                                marktext: "幻",
+                                intro: {
+                                    name:"幻神",
+                                    content: function (storage, player, skill) {
+                                        var str = "";
+                                        str += "<p align='center'>幻杀数量：" + player.storage.yzyy_huanshensha + "；（响应或打出杀）</p>";
+                                        str += "<p align='center'>幻闪数量：" + player.storage.yzyy_huanshenshan + "；（响应或打出闪）</p>";
+                                        str += "<p align='center'>幻桃数量：" + player.storage.yzyy_huanshentao + "；（响应或打出桃）</p>";
+                                        str += "<p align='center'>幻御数量：" + player.storage.yzyy_huanshenwuxie + "；（响应或打出无懈）</p>";
+                                        str += "<p align='center'>幻制数量：" + player.storage.yzyy_huanshenzhi + "；（弃置并摸一张牌）</p>";
+                                        return str;
+                                    },
+                                },
+                            },
                             yzyy_huanshen: {
                                 unique: true,
                                 locked: true,
                                 forced: true,
                                 init: function (player) {
                                     if (!player.storage.yzyy_huanshen) {
-                                        player.storage.yzyy_huanshenzhi = false;
-                                        player.storage.yzyy_huanshensha = false;
-                                        player.storage.yzyy_huanshentao = false;
-                                        player.storage.yzyy_huanshenshan = false;
-                                        player.storage.yzyy_huanshenwuxie = false;
-                                        player.storage.yzyy_huanshen = {
-                                            list: [],
-                                            owned: [],
-                                            player: player,
-                                            zhuSkill: [],
-                                            juexing: [],
-                                            limited: [],
-                                            locked: [],
-                                            common:[],
-                                        }
+                                        player.storage.yzyy_huanshenzhi = 0;
+                                        player.storage.yzyy_huanshensha = 0;
+                                        player.storage.yzyy_huanshentao = 0;
+                                        player.storage.yzyy_huanshenshan = 0;
+                                        player.storage.yzyy_huanshenwuxie = 0;
+                                        player.storage.yzyy_huanshen=[];
+                                    }
+                                    for (var i in lib.character) {
+                                        if (lib.filter.characterDisabled2(i)) continue;
+                                        player.storage.yzyy_huanshen.add(i);
                                     }
                                 },
-                                selectSkills: function (player, list) {
-                                    'step 0'
-                                    event.dialog=ui.create.dialog('forcebutton');
-                                    event.dialog.add('选择获得一项技能');
-                                    for(var i=0;i<list.length;i++){
-                                        if(lib.translate[list[i]+'_info']){
-                                            var translation=get.translation(list[i]);
-                                            if(translation[0]=='新'&&translation.length==3){
-                                                translation=translation.slice(1,3);
-                                            }
-                                            else{
-                                                translation=translation.slice(0,2);
-                                            }
-                                            var item = event.dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+
-                                            translation+'】</div><div>'+lib.translate[list[i]+'_info']+'</div></div>');
-                                            
-                                            item.firstChild.addEventListener(lib.config.touchscreen?'touchend':'click',ui.click.button);
-                                            item.firstChild.link=list[i];
-                                            for(var j in lib.element.button){
-                                                item[j]=lib.element.button[j];
-                                            }
-                                            event.dialog.buttons.add(item.firstChild);
-                                        }
-                                    }
-                                    event.dialog.add(ui.create.div('.placeholder'));
-                                    var next = player.chooseButton(event.dialog, true,[0,Infinity], function (button) {
-                                        return 1;
-                                    });
-                                    'step 1'
-                                    event.dialog.close();
-                                    if (result.bool) {
-                                        var names = result.links;
-                                        player.addSkill(names);
-                                        for(var i=0; i<names.length;i++) player.popup(names[i]);
-                                    }
-                                    else {
-                                        event.finish();
-                                    }
-                                },
+                                //判断技能类型
                                 judgeSkillType: function(player, name){
                                     var update = function (str, info, skill, currrentSkill) {
                                         currrentSkill = currrentSkill || skill
                                         str = str.replace(/<\/?.+?\/?>/g, '')
-                                        var common = 0;
                                         
-                                        if (info.limited || (info.intro && info.intro.content == 'limited') ||  str.indexOf('限定技') == 0) {
-                                            player.storage.yzyy_huanshen.limited.add(name);
-                                            player.storage.yzyy_huanshentao = true;
-                                            common += 1;
-                                        }
-                                        if (info.juexing || str.indexOf('觉醒技') == 0) {
-                                            player.storage.yzyy_huanshen.juexing.add(name);
-                                            player.storage.yzyy_huanshenwuxie = true;
-                                            common += 1;
-                                        }
-                                        if (get.is.locked(currrentSkill)) {
-                                            player.storage.yzyy_huanshen.locked.add(name);
-                                            player.storage.yzyy_huanshenshan = true;
-                                            common += 1;
-                                        }
-                                        if (info.zhuSkill || str.indexOf('主公技') == 0) {
-                                            player.storage.yzyy_huanshen.zhuSkill.add(name);
-                                            player.storage.yzyy_huanshensha = true;
-                                            common += 1;
-                                        }
-                                        
+                                        if (info.limited || (info.intro && info.intro.content == 'limited') ||  str.indexOf('限定技') == 0)
+                                            player.storage.yzyy_huanshentao++;
+                                        if (info.juexing || str.indexOf('觉醒技') == 0)
+                                            player.storage.yzyy_huanshenwuxie++;
+                                        if (info.zhuSkill || str.indexOf('主公技') == 0)
+                                            player.storage.yzyy_huanshensha++;
+                                        if (get.is.locked(currrentSkill))
+                                            player.storage.yzyy_huanshenshan++;
                                         if(info.group){
-                                            common += groupSkill(info.group, skill)
+                                            groupSkill(info.group, skill)
                                         }
-
-                                        return common;
                                     }
                                     var groupSkill = function (skill, skillx) {
-                                        var common = 0;
                                         if (Array.isArray(skill)) {
                                             for (var i of skill) {
                                                 var str = lib.translate[i + '_info'];
@@ -236,20 +193,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                                     skills.remove(skillx)
                                                     continue;
                                                 }
-                                                common += update(str, info, skillx, i)
+                                                update(str, info, skillx, i)
                                             }
                                         } else {
                                             var info = lib.skill[skill]
                                             if (!info) return false
                                             var str = lib.translate[skill + '_info']
                                             if (!str) str = ""
-                                            common += update(str, info, skillx)
+                                            update(str, info, skillx)
                                         }
-                                        return common;
                                     }
                                     var skills = lib.character[name][3].slice(0);
                                     //检测该武将是否有无特殊技能
-                                    var common = 0;
                                     for (var j of skills.slice(0)) {
                                         var info = lib.skill[j]
                                         var str = lib.translate[j + "_info"]
@@ -258,242 +213,45 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                             skills.remove(j)
                                             continue;
                                         }
-                                        common += update(str, info, j);
-                                    }
-                                    if(common == 0){
-                                        player.storage.yzyy_huanshen.common.add(name);
-                                        player.storage.yzyy_huanshenzhi = true;
+                                        update(str, info, j);
                                     }
                                     return skills;
                                 }, 
+                                //随机获取武将技能
                                 get: function (player, num) {
                                     var skills2 = [];
                                     if (typeof num != 'number') num = 1;
                                     while (num--) {
                                         //随机获取武将
-                                        var name = player.storage.yzyy_huanshen.list.randomRemove();
-                                        var skills = lib.skill.yzyy_huanshen.judgeSkillType(player,name);
-                                        
+                                        var name = player.storage.yzyy_huanshen.randomRemove();
+                                        var skills = lib.skill.yzyy_huanshen.judgeSkillType(player,name);                                    
                                         skills2 = skills2.concat(skills);
-                                        player.storage.yzyy_huanshen.owned.push(name);
-                                        player.popup(name);
-                                        game.log(player, '获得了一张武将牌');
+                                        player.storage.yzyy_huanshenzhi++;
                                     }
-                                    var mark = player.marks.yzyy_huanshen;
-                                    if (mark.firstChild) {
-                                        mark.firstChild.remove();
-                                    }
-                                    mark.setBackground(player.name, 'character');
                                     return skills2;
                                 },
-                                update: function (player, name) {
-                                    //清除数组里的技能
-                                    player.storage.yzyy_huanshen.owned.remove(name);
-                                    player.storage.yzyy_huanshen.common.remove(name);
-                                    player.storage.yzyy_huanshen.zhuSkill.remove(name);
-                                    player.storage.yzyy_huanshen.locked.remove(name);
-                                    player.storage.yzyy_huanshen.limited.remove(name);
-                                    player.storage.yzyy_huanshen.juexing.remove(name);
-                                    //添加到待选列表
-                                    if(Array.isArray(name)){
-                                        for(var i=0; i<name.length;i++)
-                                            player.storage.yzyy_huanshen.list.push(name[i]);
-                                    }else{
-                                        player.storage.yzyy_huanshen.list.push(name);
-                                    }
-                                    
-                                    //重新判断是否拥有虚拟牌
-                                    if (player.storage.yzyy_huanshen.common.length < 1)
-                                        player.storage.yzyy_huanshenzhi = false;
-                                    if (player.storage.yzyy_huanshen.zhuSkill.length < 1)
-                                        player.storage.yzyy_huanshensha = false;
-                                    if (player.storage.yzyy_huanshen.locked.length < 1)
-                                        player.storage.yzyy_huanshenshan = false;
-                                    if (player.storage.yzyy_huanshen.limited.length < 1)
-                                        player.storage.yzyy_huanshentao = false;
-                                    if (player.storage.yzyy_huanshen.juexing.length < 1)
-                                        player.storage.yzyy_huanshenwuxie = false;
-                                },
-                                presha: function () {
-                                    'step 0'
-                                    var list = player.storage.yzyy_huanshen.zhuSkill;
-                                    var str = '将拥有主公技的武将牌当做【' + '杀' + '】使用或打出';
-                                    event.dialog = ui.create.dialog(str, [list, 'character']);
-                                    var next = player.chooseButton(event.dialog, true, function (button) {
-                                        return 1;
-                                    });
-                                    'step 1'
-                                    if (result.bool) {
-                                        var name = result.buttons[0].link;
-                                        lib.skill.yzyy_huanshen.update(player, name);
-                                    }
-                                    else {
-                                        event.finish();
-                                    }
-                                },
-                                preshan: function () {
-                                    'step 0'
-                                    var list = player.storage.yzyy_huanshen.locked;
-                                    var str = '将拥有锁定技的武将牌当做【' + '闪' + '】使用或打出';
-                                    event.dialog = ui.create.dialog(str, [list, 'character']);
-                                    var next = player.chooseButton(event.dialog, true,function (button) {
-                                        return 1;
-                                    });
-                                    'step 1'
-                                    if (result.bool) {
-                                        var name = result.buttons[0].link;
-                                        lib.skill.yzyy_huanshen.update(player, name);
-                                    }
-                                    else {
-                                        event.finish();
-                                    }
-                                },
-                                pretao: function () {
-                                    'step 0'
-                                    var list = player.storage.yzyy_huanshen.limited;
-                                    var str = '将拥有限定技的武将牌当做【' + '桃' + '】使用或打出';
-                                    event.dialog = ui.create.dialog(str, [list, 'character']);
-                                    var next = player.chooseButton(event.dialog, true, function (button) {
-                                        return 1;
-                                    });
-                                    'step 1'
-                                    if (result.bool) {
-                                        var name = result.buttons[0].link;
-                                        lib.skill.yzyy_huanshen.update(player, name);
-                                    }
-                                    else {
-                                        event.finish();
-                                    }
-                                },
-                                prewuxie: function () {
-                                    'step 0'
-                                    var list = player.storage.yzyy_huanshen.juexing;
-                                    var str = '将拥有觉醒技的武将牌当做【' + '无懈可击' + '】使用或打出';
-                                    event.dialog = ui.create.dialog(str, [list, 'character']);
-                                    var next = player.chooseButton(event.dialog, true, function (button) {
-                                        return 1;
-                                    });
-                                    'step 1'
-                                    if (result.bool) {
-                                        var name = result.buttons[0].link;
-                                        lib.skill.yzyy_huanshen.update(player, name);
-                                    }
-                                    else {
-                                        event.finish();
-                                    }
-                                },
-                                prezhiheng: function(){
-                                    'step 0'
-                                    var list = player.storage.yzyy_huanshen.common;
-                                    var str = '选择任意其他武将牌弃置，并莫等量的牌';
-                                    event.dialog = ui.create.dialog(str, [list, 'character']);
-                                    var next = player.chooseButton(event.dialog, true,[0, Infinity], function (button) {
-                                        return 1;
-                                    });
-                                    'step 1'
-                                    if (result.bool) {
-                                        var names = result.links;
-                                        player.draw(names.length);
-                                        lib.skill.yzyy_huanshen.update(player, names);
-                                    }
-                                    else {
-                                        event.finish();
-                                    }
-                                },
-                                ai: {
-                                    skillTagFilter: function (player, tag) {
-                                        switch (tag) {
-                                            case 'respondSha': {
-                                                if (!player.storage.yzyy_huanshensha) return false;
-                                                break;
-                                            }
-                                            case 'respondShan': {
-                                                if (!player.storage.yzyy_huanshenshan) return false;
-                                                break;
-                                            }
-                                            case 'save': {
-                                                if (!player.storage.yzyy_huanshentao) return false;
-                                                break;
-                                            }
-                                        }
-                                    },
-                                    save: true,
-                                    respondSha: true,
-                                    respondShan: true,
-                                    threaten: 3,
-                                },
-                                group: ["yzyy_huanshen1", "yzyy_huanshen2", "yzyy_huanshen3", "yzyy_huanshen4", "yzyy_huanshen5", "yzyy_huanshen6", "yzyy_huanshen7", "yzyy_huanshen8"],
-                                intro: {
-                                    content: function (storage, player) {
-                                        var str = '';
-                                        var list = storage.owned;
-                                        if (list.length) {
-                                            str += get.translation(list[0]);
-                                            for (var i = 1; i < list.length; i++) {
-                                                str += '、' + get.translation(list[i]);
-                                            }
-                                        }
-                                        var skills = player.additionalSkills['yzyy_huanshen'];
-                                        if (skills.length) {
-                                            str += '<p>当前技能：' + get.translation(skills[0]);
-                                            for (var i = 1; i < skills.length; i++) {
-                                                str += '、' + get.translation(skills[i]);
-                                            }
-                                        }
-                                        return str;
-                                    },
-                                    mark: function (dialog, content, player) {
-                                        var list = content.owned;
-                                        if (list.length) {
-                                            // dialog.addAuto([list, 'character']);
-                                            if (content.common.length > 0) {
-                                                dialog.addText('普通武将（制衡）');
-                                                dialog.add([content.common, 'character']);
-                                            };
-                                            if (content.locked.length > 0) {
-                                                dialog.addText('拥有锁定技的武将（闪）');
-                                                dialog.add([content.locked, 'character']);
-                                            };
-                                            if (content.limited.length > 0) {
-                                                dialog.addText('拥有限定技的武将（桃）');
-                                                dialog.add([content.limited, 'character']);
-                                            };
-                                            if (content.juexing.length > 0) {
-                                                dialog.addText('拥有觉醒技的武将（无懈）');
-                                                dialog.add([content.juexing, 'character']);
-                                            };
-                                            if (content.zhuSkill.length > 0) {
-                                                dialog.addText('拥有主公技的武将（杀）');
-                                                dialog.add([content.zhuSkill, 'character']);
-                                            };
-                                        }
-                                    },
-                                },
-                                mark: true,
+                                group: ["yzyy_huanshen_mark", "yzyy_huanshen_huan", "yzyy_huanshen_tao", "yzyy_huanshen_sha", "yzyy_huanshen_shan", "yzyy_huanshen_yu", "yzyy_huanshen_zhi", "yzyy_huanshen_die"],
                             },
-                            yzyy_huanshen1: {
+                            //获得技能
+                            yzyy_huanshen_huan: {
                                 trigger: {
                                     global: ["gameStart"],
+                                    player: ["phaseBegin", "changeHP"],
+                                },
+                                filter: function (event, player) {
+                                    if(event.name == "game")
+                                        player.huanshen_num = 2;
+                                    else player.huanshen_num = 1;
+                                    return player.storage.yzyy_huanshen.length > 0;
                                 },
                                 forced: true,
                                 priority: Infinity,
-                                filter: function (event, player) {
-                                    return !player.storage.yzyy_huansheninited;
-                                },
                                 content: function () {
                                     'step 0'
-                                    for (var i in lib.character) {
-                                        if (lib.filter.characterDisabled2(i)) continue;
-                                        player.storage.yzyy_huanshen.list.add(i);
-                                    }
-                                    // for (var i = 0; i < game.players.length; i++) {
-                                    //     player.storage.yzyy_huanshen.list.remove([game.players[i].name]);
-                                    //     player.storage.yzyy_huanshen.list.remove([game.players[i].name1]);
-                                    //     player.storage.yzyy_huanshen.list.remove([game.players[i].name2]);
-                                    // }
-                                    var list = lib.skill.yzyy_huanshen.get(player, 2);
+                                    player.markSkill("yzyy_huanshen_mark");
+                                    var list = lib.skill.yzyy_huanshen.get(player, player.huanshen_num);
                                     event.dialog=ui.create.dialog('forcebutton');
-                                    event.dialog.add('选择获得一项技能');
+                                    event.dialog.add('选择获得的技能');
                                     for(var i=0;i<list.length;i++){
                                         if(lib.translate[list[i]+'_info']){
                                             var translation=get.translation(list[i]);
@@ -515,7 +273,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                         }
                                     }
                                     event.dialog.add(ui.create.div('.placeholder'));
-                                    var next = player.chooseButton(event.dialog, true,[0,Infinity], function (button) {
+                                    player.chooseButton(event.dialog, true,[0,Infinity], function (button) {
                                         return 1;
                                     });
                                     'step 1'
@@ -528,360 +286,103 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     else {
                                         event.finish();
                                     }
-                                    player.storage.yzyy_huansheninited = true;
-                                },
-                            },
-                            yzyy_huanshen2: {
-                                trigger: {
-                                    player: ["phaseBegin", "damageEnd"],
-                                },
-                                forced: true,
-                                priority: Infinity,
-                                filter: function (event, player) {
-                                    return player.storage.yzyy_huanshen && player.storage.yzyy_huanshen.list &&
-                                        player.storage.yzyy_huanshen.list.length > 0;
-                                },
-                                content: function () {
-                                    'step 0'
-                                    var list = lib.skill.yzyy_huanshen.get(player);
-                                    event.dialog=ui.create.dialog('forcebutton');
-                                    event.dialog.add('选择获得一项技能');
-                                    for(var i=0;i<list.length;i++){
-                                        if(lib.translate[list[i]+'_info']){
-                                            var translation=get.translation(list[i]);
-                                            if(translation[0]=='新'&&translation.length==3){
-                                                translation=translation.slice(1,3);
-                                            }
-                                            else{
-                                                translation=translation.slice(0,2);
-                                            }
-                                            var item = event.dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">【'+
-                                            translation+'】</div><div>'+lib.translate[list[i]+'_info']+'</div></div>');
-                                            
-                                            item.firstChild.addEventListener(lib.config.touchscreen?'touchend':'click',ui.click.button);
-                                            item.firstChild.link=list[i];
-                                            for(var j in lib.element.button){
-                                                item[j]=lib.element.button[j];
-                                            }
-                                            event.dialog.buttons.add(item.firstChild);
-                                        }
-                                    }
-                                    event.dialog.add(ui.create.div('.placeholder'));
-                                    var next = player.chooseButton(event.dialog, true,[0,Infinity], function (button) {
-                                        return 1;
-                                    });
-                                    'step 1'
-                                    event.dialog.close();
-                                    if (result.bool) {
-                                        var names = result.links;
-                                        player.addSkill(names);
-                                        for(var i=0; i<names.length;i++) player.popup(names[i]);
-                                    }
-                                    else {
-                                        event.finish();
-                                    }
-                                },
-                                ai: {
-                                    maixie: true,
-                                },
+                                }
                             },
                             //限定 桃
-                            yzyy_huanshen3: {
+                            yzyy_huanshen_tao: {
                                 forced: true,
+                                name:"幻桃",
                                 enable: ["chooseToUse", "chooseToRespond"],
-                                prompt: "拥有限定技的武将牌当做【桃】使用或打出",
+                                prompt: "弃置一张幻桃标记当做【桃】使用或打出",
                                 filter: function (event, player) {
-                                    return player.storage.yzyy_huanshentao;
+                                    return player.storage.yzyy_huanshentao > 0;
                                 },
                                 popname: true,
                                 filterCard: function () { return false; },
                                 selectCard: -1,
-                                viewAs: {
-                                    name: "tao",
-                                },
+                                viewAs: {name: "tao"},
                                 onuse: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.pretao);
+                                    player.storage.yzyy_huanshentao --;
                                 },
                                 onrespond: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.pretao);
-                                },
-                                ai: {
-                                    basic: {
-                                        order: function (card, player) {
-                                            if (player.hasSkillTag('pretao')) return 5;
-                                            return 2;
-                                        },
-                                        useful: [8, 6.5, 5, 4],
-                                        value: [8, 6.5, 5, 4],
-                                    },
-                                    result: {
-                                        target: function (player, target) {
-                                            // if(player==target&&player.hp<=0) return 2;
-                                            if (player.hasSkillTag('nokeep')) return 2;
-                                            var nd = player.needsToDiscard();
-                                            var keep = false;
-                                            if (nd <= 0) {
-                                                keep = true;
-                                            }
-                                            else if (nd == 1 && target.hp >= 2 && target.countCards('h', 'tao') <= 1) {
-                                                keep = true;
-                                            }
-                                            var mode = get.mode();
-                                            if (target.hp >= 2 && keep && target.hasFriend()) {
-                                                if (target.hp > 2 || nd == 0) return 0;
-                                                if (target.hp == 2) {
-                                                    if (game.hasPlayer(function (current) {
-                                                        if (target != current && get.attitude(target, current) >= 3) {
-                                                            if (current.hp <= 1) return true;
-                                                            if ((mode == 'identity' || mode == 'versus' || mode == 'chess') && current.identity == 'zhu' && current.hp <= 2) return true;
-                                                        }
-                                                    })) {
-                                                        return 0;
-                                                    }
-                                                }
-                                            }
-                                            if (target.hp < 0 && target != player && target.identity != 'zhu') return 0;
-                                            var att = get.attitude(player, target);
-                                            if (att < 3 && att >= 0 && player != target) return 0;
-                                            var tri = _status.event.getTrigger();
-                                            if (mode == 'identity' && player.identity == 'fan' && target.identity == 'fan') {
-                                                if (tri && tri.name == 'dying' && tri.source && tri.source.identity == 'fan' && tri.source != target) {
-                                                    var num = game.countPlayer(function (current) {
-                                                        if (current.identity == 'fan') {
-                                                            return current.countCards('h', 'tao');
-                                                        }
-                                                    });
-                                                    if (num > 1 && player == target) return 2;
-                                                    return 0;
-                                                }
-                                            }
-                                            if (mode == 'identity' && player.identity == 'zhu' && target.identity == 'nei') {
-                                                if (tri && tri.name == 'dying' && tri.source && tri.source.identity == 'zhong') {
-                                                    return 0;
-                                                }
-                                            }
-                                            if (mode == 'stone' && target.isMin() &&
-                                                player != target && tri && tri.name == 'dying' && player.side == target.side &&
-                                                tri.source != target.getEnemy()) {
-                                                return 0;
-                                            }
-                                            return 2;
-                                        },
-                                        "target_use": function (player, target) {
-                                            // if(player==target&&player.hp<=0) return 2;
-                                            if (player.hasSkillTag('nokeep', true, null, true)) return 2;
-                                            var nd = player.needsToDiscard();
-                                            var keep = false;
-                                            if (nd <= 0) {
-                                                keep = true;
-                                            }
-                                            else if (nd == 1 && target.hp >= 2 && target.countCards('h', 'tao') <= 1) {
-                                                keep = true;
-                                            }
-                                            var mode = get.mode();
-                                            if (target.hp >= 2 && keep && target.hasFriend()) {
-                                                if (target.hp > 2 || nd == 0) return 0;
-                                                if (target.hp == 2) {
-                                                    if (game.hasPlayer(function (current) {
-                                                        if (target != current && get.attitude(target, current) >= 3) {
-                                                            if (current.hp <= 1) return true;
-                                                            if ((mode == 'identity' || mode == 'versus' || mode == 'chess') && current.identity == 'zhu' && current.hp <= 2) return true;
-                                                        }
-                                                    })) {
-                                                        return 0;
-                                                    }
-                                                }
-                                            }
-                                            if (target.hp < 0 && target != player && target.identity != 'zhu') return 0;
-                                            var att = get.attitude(player, target);
-                                            if (att < 3 && att >= 0 && player != target) return 0;
-                                            var tri = _status.event.getTrigger();
-                                            if (mode == 'identity' && player.identity == 'fan' && target.identity == 'fan') {
-                                                if (tri && tri.name == 'dying' && tri.source && tri.source.identity == 'fan' && tri.source != target) {
-                                                    var num = game.countPlayer(function (current) {
-                                                        if (current.identity == 'fan') {
-                                                            return current.countCards('h', 'tao');
-                                                        }
-                                                    });
-                                                    if (num > 1 && player == target) return 2;
-                                                    return 0;
-                                                }
-                                            }
-                                            if (mode == 'identity' && player.identity == 'zhu' && target.identity == 'nei') {
-                                                if (tri && tri.name == 'dying' && tri.source && tri.source.identity == 'zhong') {
-                                                    return 0;
-                                                }
-                                            }
-                                            if (mode == 'stone' && target.isMin() &&
-                                                player != target && tri && tri.name == 'dying' && player.side == target.side &&
-                                                tri.source != target.getEnemy()) {
-                                                return 0;
-                                            }
-                                            return 2;
-                                        },
-                                    },
-                                    tag: {
-                                        recover: 1,
-                                        save: 1,
-                                    },
+                                    player.storage.yzyy_huanshentao --;
                                 },
                             },
                             //主公 杀
-                            yzyy_huanshen4: {
+                            yzyy_huanshen_sha: {
                                 forced: true,
+                                name:"幻杀",
                                 enable: ["chooseToUse", "chooseToRespond"],
-                                prompt: "将拥有主公技的武将牌当做普通【杀】使用或打出",
+                                prompt: "弃置一张幻杀标记当做普通【杀】使用或打出",
                                 filter: function (event, player) {
-                                    return player.storage.yzyy_huanshensha;
+                                    return player.storage.yzyy_huanshensha > 0;
                                 },
                                 popname: true,
                                 filterCard: function () { return false; },
                                 selectCard: -1,
-                                viewAs: {
-                                    name: "sha",
-                                },
+                                viewAs: {name: "sha"},
                                 onuse: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.presha);
+                                    player.storage.yzyy_huanshensha --;
                                 },
                                 onrespond: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.presha);
-                                },
-                                ai: {
-                                    basic: {
-                                        useful: [5, 1],
-                                        value: [5, 1],
-                                    },
-                                    order: function () {
-                                        if (_status.event.player.hasSkillTag('presha', true, null, true)) return 10;
-                                        return 3;
-                                    },
-                                    result: {
-                                        target: function (player, target) {
-                                            if (player.hasSkill('jiu') && !target.hasSkillTag('filterDamage', null, {
-                                                player: player,
-                                                card: { name: 'sha' },
-                                            })) {
-                                                if (get.attitude(player, target) > 0) {
-                                                    return -7;
-                                                }
-                                                else {
-                                                    return -4;
-                                                }
-                                            }
-                                            return -1.5;
-                                        },
-                                    },
-                                    tag: {
-                                        respond: 1,
-                                        respondShan: 1,
-                                        damage: function (card) {
-                                            if (card.nature == 'poison') return;
-                                            return 1;
-                                        },
-                                        natureDamage: function (card) {
-                                            if (card.nature) return 1;
-                                        },
-                                        fireDamage: function (card, nature) {
-                                            if (card.nature == 'fire') return 1;
-                                        },
-                                        thunderDamage: function (card, nature) {
-                                            if (card.nature == 'thunder') return 1;
-                                        },
-                                        poisonDamage: function (card, nature) {
-                                            if (card.nature == 'poison') return 1;
-                                        },
-                                    },
-                                    canLink: function (player, target, card) {
-                                        if (!target.isLinked() && !player.hasSkill('wutiesuolian_skill')) return false;
-                                        if (target.mayHaveShan() && !player.hasSkillTag('directHit_ai', true, {
-                                            target: target,
-                                            card: card,
-                                        }, true)) return false;
-                                        if (player.hasSkill('jueqing') || target.hasSkill('gangzhi') || target.hasSkill('gangzhi')) return false;
-                                        return true;
-                                    },
+                                    player.storage.yzyy_huanshensha --;
                                 },
                             },
                             //锁定 闪
-                            yzyy_huanshen5: {
+                            yzyy_huanshen_shan: {
                                 forced: true,
+                                name:"幻闪",
                                 enable: ["chooseToUse", "chooseToRespond"],
-                                prompt: "将拥有锁定技的武将牌当做【闪】使用或打出",
+                                prompt: "弃置一张幻闪标记当做【闪】使用或打出",
                                 filter: function (event, player) {
-                                    return player.storage.yzyy_huanshenshan;
+                                    return player.storage.yzyy_huanshenshan > 0;
                                 },
                                 popname: true,
                                 filterCard: function () { return false; },
                                 selectCard: -1,
-                                viewAs: {
-                                    name: "shan",
-                                },
+                                viewAs: {name: "shan"},
                                 onuse: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.preshan);
+                                    player.storage.yzyy_huanshenshan --;
                                 },
                                 onrespond: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.preshan);
-                                },
-                                ai: {
-                                    basic: {
-                                        useful: [7, 2],
-                                        value: [7, 2],
-                                    },
-                                    result: {
-                                        player: 1,
-                                    },
-                                    order: 3,
+                                    player.storage.yzyy_huanshenshan --;
                                 },
                             },
                             //觉醒 无懈
-                            yzyy_huanshen6: {
+                            yzyy_huanshen_yu: {
                                 forced: true,
+                                name:"幻御",
                                 enable: ["chooseToUse", "chooseToRespond"],
-                                prompt: "将拥有觉醒技的武将牌当做【无懈可击】使用或打出",
+                                prompt: "弃置一张幻御标记当做【无懈可击】使用或打出",
                                 viewAsFilter: function (player) {
-                                    if (!player.storage.yzyy_huanshenwuxie) return false;
-                                    return true;
+                                    return player.storage.yzyy_huanshenwuxie > 0;
                                 },
                                 popname: true,
                                 filterCard: function () { return false; },
                                 selectCard: -1,
-                                viewAs: {
-                                    name: "wuxie",
-                                },
+                                viewAs: {name: "wuxie"},
                                 onuse: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.prewuxie);
+                                    vplayer.storage.yzyy_huanshenwuxie --;
                                 },
                                 onrespond: function (result, player) {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.prewuxie);
-                                },
-                                ai: {
-                                    basic: {
-                                        useful: [6, 4],
-                                        value: [6, 4],
-                                    },
-                                    result: {
-                                        player: 1,
-                                    },
-                                    expose: 0.2,
+                                    player.storage.yzyy_huanshenwuxie --;
                                 },
                             },
-                            yzyy_huanshen7: {
+                            //制
+                            yzyy_huanshen_zhi: {
+                                forced: true,
+                                enable: "phaseUse",
+                                prompt: "制衡",
+                                filter: function (card, player, target) {
+                                    return player.storage.yzyy_huanshenzhi > 0;
+                                },
+                                content: function () {
+                                    player.storage.yzyy_huanshenzhi --;
+                                    player.draw();
+                                },
+                            },
+                            //移除技能
+                            yzyy_huanshen_die: {
                                 forced: true,
                                 enable: "phaseUse",
                                 prompt: "移除一个技能",
@@ -942,20 +443,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     delete player.storage[link];
                                     game.log(player, '移除了技能', '【' + get.translation(link) + '】');
                                     game.delay();
-                                },
-                            },
-                            yzyy_huanshen8: {
-                                forced: true,
-                                enable: "phaseUse",
-                                prompt: "移除一个武将",
-                                filter: function (card, player, target) {
-                                    if (!player.storage.yzyy_huanshenzhi) return false;
-                                    return true;
-                                },
-                                content: function () {
-                                    var next = game.createEvent('yzyy_huanshenCards');
-                                    next.player = player;
-                                    next.setContent(lib.skill.yzyy_huanshen.prezhiheng);
                                 },
                             },
 
@@ -1598,15 +1085,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                             yzyy_shenlin2:"降神",
 
                             yzyy_huanshen: "幻神",
-                            yzyy_huanshen_info: "锁定技，游戏开始时，你随机获得两张武将牌。受到伤害后，你随机获得一张武将牌。你选择获得武将牌上的技能。你可以将拥有锁定技的武将牌当做【闪】使用或打出；将拥有主公技的武将牌当做普通【杀】使用或打出；将拥有限定技的武将牌当做【桃】使用或打出；将拥有觉醒技的武将牌当做【无懈可击】使用或打出。出牌阶段，你可以移除任意技能",
-                            yzyy_huanshen1: "幻神·生",
-                            yzyy_huanshen2: "幻神·幻",
-                            yzyy_huanshen3: "幻神·桃",
-                            yzyy_huanshen4: "幻神·杀",
-                            yzyy_huanshen5: "幻神·闪",
-                            yzyy_huanshen6: "幻神·防",
-                            yzyy_huanshen7: "幻神·灭",
-                            yzyy_huanshen8: "幻神·制",
+                            yzyy_huanshen_info: "锁定技，游戏开始时或受到伤害后，你选择随机两张/一张武将牌上的技能获得之；出牌阶段，你可以移除任意技能；你每获得一个技能 幻制标记+1、锁定技幻闪标记+1、主公技幻杀标记+1、限定技幻与标记+1",
+                            yzyy_huanshen_huan: "幻生",
+                            yzyy_huanshen_tao: "幻桃",
+                            yzyy_huanshen_sha: "幻杀",
+                            yzyy_huanshen_shan: "幻闪",
+                            yzyy_huanshen_yu: "幻御 ",
+                            yzyy_huanshen_die: "幻灭",
+                            yzyy_huanshen_zhi: "幻制",
 
                             yzyy_yichuang:"易創",
                             yzyy_yichuang_info:"锁定技。当你对一名角色造成伤害前，可以选择一名角色让其成为此伤害的来源，否则视为无来源。",
