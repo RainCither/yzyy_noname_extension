@@ -138,11 +138,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                                     name:"幻神",
                                     content: function (storage, player, skill) {
                                         var str = "";
-                                        str += "<p align='center'>幻杀数量：" + player.storage.yzyy_huanshensha + "；（响应或打出杀）</p>";
-                                        str += "<p align='center'>幻闪数量：" + player.storage.yzyy_huanshenshan + "；（响应或打出闪）</p>";
-                                        str += "<p align='center'>幻桃数量：" + player.storage.yzyy_huanshentao + "；（响应或打出桃）</p>";
-                                        str += "<p align='center'>幻御数量：" + player.storage.yzyy_huanshenwuxie + "；（响应或打出无懈）</p>";
-                                        str += "<p align='center'>幻制数量：" + player.storage.yzyy_huanshenzhi + "；（弃置并摸一张牌）</p>";
+                                        str += "<p align='center'>幻杀：" + player.storage.yzyy_huanshensha + "；（响应或打出杀）</p>";
+                                        str += "<p align='center'>幻闪：" + player.storage.yzyy_huanshenshan + "；（响应或打出闪）</p>";
+                                        str += "<p align='center'>幻桃：" + player.storage.yzyy_huanshentao + "；（响应或打出桃）</p>";
+                                        str += "<p align='center'>幻御：" + player.storage.yzyy_huanshenwuxie + "；（无懈可击）</p>";
+                                        str += "<p align='center'>幻制：" + player.storage.yzyy_huanshenzhi + "；（摸一张牌）</p>";
                                         return str;
                                     },
                                 },
